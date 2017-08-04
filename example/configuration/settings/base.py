@@ -1,4 +1,9 @@
+# -*- coding: utf-8 -*-
 import os
+
+from django.utils.translation import ugettext_lazy as _
+
+
 gettext = lambda s: s
 DATA_DIR = os.path.dirname(os.path.dirname(__file__))
 """
@@ -125,6 +130,8 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'django.contrib.messages',
     'cms',
+    'adminsortable2',
+    'djangocms_moderation',
     'menus',
     'sekizai',
     'treebeard',
@@ -141,18 +148,17 @@ INSTALLED_APPS = (
     'djangocms_snippet',
     'djangocms_googlemap',
     'djangocms_video',
-    'configuration'
+    'configuration',
+    'django_extensions'
 )
 
 LANGUAGES = (
-    ## Customize this
-    ('en', gettext('en')),
-    ('de', gettext('de')),
-    ('fr', gettext('fr')),
+    ('en', _('English')),
+    ('de', _('German')),
+    ('et', _('Estonian')),
 )
 
 CMS_LANGUAGES = {
-    ## Customize this
     'default': {
         'redirect_on_fallback': True,
         'hide_untranslated': False,
@@ -160,23 +166,34 @@ CMS_LANGUAGES = {
     },
     1: [
         {
-            'redirect_on_fallback': True,
-            'hide_untranslated': False,
-            'public': True,
             'code': 'en',
-            'name': gettext('en'),
+            'name': _('English'),
+            'redirect_on_fallback': False,
+            'public': True,
+        },
+        {
+            'code': 'de',
+            'name': _('German'),
+            'fallbacks': ['en'],
+            'public': True,
+        },
+        {
+            'code': 'et',
+            'name': _('Estonian'),
+            'fallbacks': ['en'],
+            'public': True,
         },
     ],
 }
 
+
 CMS_TEMPLATES = (
-    ## Customize this
     ('fullwidth.html', 'Fullwidth'),
     ('sidebar_left.html', 'Sidebar Left'),
     ('sidebar_right.html', 'Sidebar Right')
 )
 
-CMS_PERMISSION = True
+CMS_PERMISSION = False
 
 CMS_PLACEHOLDER_CONF = {}
 
@@ -190,3 +207,5 @@ THUMBNAIL_PROCESSORS = (
     'filer.thumbnail_processors.scale_and_crop_with_subject_location',
     'easy_thumbnails.processors.filters'
 )
+
+
