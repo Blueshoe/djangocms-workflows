@@ -130,8 +130,8 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'django.contrib.messages',
     'cms',
-    'adminsortable2',
-    'djangocms_moderation',
+    # 'adminsortable2',
+    # 'djangocms_moderation',
     'menus',
     'sekizai',
     'treebeard',
@@ -148,7 +148,7 @@ INSTALLED_APPS = (
     'djangocms_snippet',
     'djangocms_googlemap',
     'djangocms_video',
-    'configuration',
+    'configuration',  # needed for templates
     'django_extensions'
 )
 
