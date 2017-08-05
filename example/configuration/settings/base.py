@@ -130,7 +130,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'django.contrib.messages',
     'cms',
-    # 'adminsortable2',
+    'adminsortable2',
     # 'djangocms_moderation',
     'menus',
     'sekizai',
@@ -149,7 +149,8 @@ INSTALLED_APPS = (
     'djangocms_googlemap',
     'djangocms_video',
     'configuration',  # needed for templates
-    'django_extensions'
+    'django_extensions',
+    'pipelines'
 )
 
 LANGUAGES = (
