@@ -1,0 +1,3 @@
+{% block salutation %}{% endblock %}
+
+{% block message %}{% endblock %}

@@ -1,0 +1,6 @@
+{% extends 'pipelines/emails/base_to_author.txt' %}
+{% load i18n %}
+
+{% block message %}
+{% blocktrans %}your submission on {{ url }} has been cancelled by {{ editor_name }}.{% endblocktrans %}
+{% endblock %}
