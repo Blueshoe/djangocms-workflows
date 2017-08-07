@@ -5,7 +5,6 @@ from cms.models import Title
 
 from ..models import WorkflowExtension, Workflow
 
-
 logger = logging.getLogger('django.cms-workflows')
 
 
@@ -16,17 +15,27 @@ def get_workflow(title):
     :rtype: Workflow | None
     :raises: Workflow.MultipleObjectsReturned
     """
-    # check for custom workflow
+    # 1. check for custom workflow
     try:
-        return title.workflowextension
+        return title.workflowextension.workflow
     except WorkflowExtension.DoesNotExist:
         pass
-    # TODO check for for custom workflow on ancestor pages that apply to descendants
 
-    # check for default workflow
+    # 2. check for inherited workflow up the site tree
+    titles = Title.objects.filter(page__in=title.page.get_ancestors())  # all title of ancestor pages ...
+    titles = titles.filter(language=title.language)                     # and same language ...
+    titles = titles.filter(workflowextension__descendants=True)         # that have an inherited workflow ...
+    titles = titles.order_by('-page__depth')                            # bottom up
+    ancestor_title = titles.first()
+
+    if ancestor_title:
+        return ancestor_title.workflowextension.workflow
+
     try:
+        # 3. check for default workflow
         return Workflow.default_workflow()
     except Workflow.DoesNotExist:
+        # 4. no workflow applies
         return None
     except Workflow.MultipleObjectsReturned:
         logger.warning('Multiple default workflows set. This should not happen!')
