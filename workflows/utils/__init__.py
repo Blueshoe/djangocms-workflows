@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 from .action import *
 from .email import *
-from .pipeline import *
+from .workflow import *
 
 
 __all__ = [
-    'get_pipeline',
+    'get_workflow',
     'send_action_mails',
     'get_absolute_url',
     'get_name',

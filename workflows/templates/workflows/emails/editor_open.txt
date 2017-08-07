@@ -1,4 +1,4 @@
-{% extends 'pipelines/emails/base_to_editor.txt' %}{% load i18n %}
+{% extends 'workflows/emails/base_to_editor.txt' %}{% load i18n %}
 {% block message %}
 {% blocktrans %}please review the changes {{ author_name }} has submitted in {{ url }}.{% endblocktrans %}
 {% endblock %}

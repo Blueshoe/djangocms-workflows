@@ -1,4 +1,4 @@
-{% extends 'pipelines/emails/base_to_author.txt' %}
+{% extends 'workflows/emails/base_to_author.txt' %}
 {% load i18n %}
 
 {% block message %}

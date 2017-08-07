@@ -56,7 +56,7 @@ def _context(action):
         'url': get_absolute_url(action.title),
         'author_name': get_name(author, default=_('author')),
         'editor_name': get_name(editor, default=_('editor')),
-        'project': getattr(settings, 'PROJECT_NAME', 'djangocms-pipelines')
+        'project': getattr(settings, 'PROJECT_NAME', 'djangocms-workflows')
     }
     return context
 

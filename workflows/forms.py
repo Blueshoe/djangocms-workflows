@@ -4,12 +4,12 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.utils.translation import ugettext_lazy as _
 
-from pipelines.utils.action import get_current_action
+from workflows.utils.action import get_current_action
 from .models import Action
-from .utils.pipeline import get_pipeline
+from .utils.workflow import get_workflow
 
 
-# TODO form for Pipeline admin (esp. Formset for Stage inlines)
+# TODO form for Workflow admin (esp. Formset for Stage inlines)
 
 
 # TODO forms (hierarchy) to handle 4 different actions
@@ -30,7 +30,7 @@ class ActionForm(forms.ModelForm):
         self.action_type = kwargs.pop('action_type')  # {open, approve, reject, cancel}
         self.title = kwargs.pop('title')
         self.current_action = get_current_action(self.title)
-        self.pipeline = get_pipeline(self.title)
+        self.workflow = get_workflow(self.title)
         self.request = kwargs.pop('request')
         self.user = self.request.user
         super(ActionForm, self).__init__(*args, **kwargs)
@@ -50,7 +50,7 @@ class ActionForm(forms.ModelForm):
     def save(self):
         # TODO
         # title -> self.title
-        # pipeline -> self.pipeline
+        # workflow -> self.workflow
         # stage -> self.stage
         # group -> stage.group
         # action_type -> self.action_type

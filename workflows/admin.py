@@ -3,15 +3,15 @@
 from adminsortable2.admin import SortableInlineAdminMixin
 from django.contrib import admin
 
-from .models import PipelineStage
+from .models import WorkflowStage
 
 # Register your models here.
 
 
-class PipelineStageInline(SortableInlineAdminMixin, admin.TabularInline):
+class WorkflowStageInline(SortableInlineAdminMixin, admin.TabularInline):
     # TODO
     # formset = WorkflowStepInlineFormSet
-    model = PipelineStage
+    model = WorkflowStage
 
     def get_extra(self, request, obj=None, **kwargs):
         if obj and obj.pk:
@@ -19,9 +19,9 @@ class PipelineStageInline(SortableInlineAdminMixin, admin.TabularInline):
         return 1
 
 
-class PipelineAdmin(admin.ModelAdmin):
+class WorkflowAdmin(admin.ModelAdmin):
     # TODO
-    inlines = [PipelineStageInline]
+    inlines = [WorkflowStageInline]
     list_display = ['name', 'default']
     fields = ['name', 'is_default']
 

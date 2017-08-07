@@ -8,7 +8,7 @@ from django.utils.translation import ugettext_lazy as _
 from treebeard.mp_tree import MP_Node
 
 
-class Pipeline(models.Model):
+class Workflow(models.Model):
     name = models.CharField(
         _('Name'),
         max_length=63,
@@ -17,22 +17,22 @@ class Pipeline(models.Model):
     )
 
     default = models.BooleanField(
-        _('Default pipeline'),
+        _('Default workflow'),
         default=False,
-        help_text=_('Should this be the default pipeline for all pages?')
+        help_text=_('Should this be the default workflow for all pages?')
     )
 
     class Meta:
-        verbose_name = _('Pipeline')
-        verbose_name_plural = _('Pipelines')
+        verbose_name = _('Workflow')
+        verbose_name_plural = _('Workflows')
 
     def save(self, **kwargs):
         if self.default:
-            Pipeline.objects.filter(default=True).exclude(pk=self.pk).update(default=False)
-        super(Pipeline, self).save(**kwargs)
+            Workflow.objects.filter(default=True).exclude(pk=self.pk).update(default=False)
+        super(Workflow, self).save(**kwargs)
 
     @classmethod
-    def default_pipeline(cls):
+    def default_workflow(cls):
         return cls.objects.get(default=True)
 
     @cached_property
@@ -40,11 +40,11 @@ class Pipeline(models.Model):
         return self.stages.filter(optional=False)
 
 
-class PipelineStage(models.Model):
-    pipeline = models.ForeignKey(
-        'pipelines.Pipeline',
+class WorkflowStage(models.Model):
+    workflow = models.ForeignKey(
+        'workflows.Workflow',
         on_delete=models.CASCADE,
-        verbose_name=_('Pipeline'),
+        verbose_name=_('Workflow'),
         related_name='stages'
     )
 
@@ -52,7 +52,7 @@ class PipelineStage(models.Model):
         'auth.Group',
         on_delete=models.PROTECT,
         verbose_name=_('Group'),
-        help_text=_('Only members of this group can approve this pipeline stage.'),
+        help_text=_('Only members of this group can approve this workflow stage.'),
     )
 
     # admin-sortable required
@@ -64,45 +64,45 @@ class PipelineStage(models.Model):
     optional = models.BooleanField(
         _('Optional'),
         default=False,
-        help_text=_('Is this pipeline stage optional?')
+        help_text=_('Is this workflow stage optional?')
     )
 
     class Meta:
-        verbose_name = _('Pipeline stage')
-        verbose_name_plural = _('Pipelines stages')
+        verbose_name = _('Workflow stage')
+        verbose_name_plural = _('Workflow stages')
         ordering = ('order',)
-        unique_together = (('pipeline', 'group'),)
+        unique_together = (('workflow', 'group'),)
 
     @cached_property
     def next_mandatory_stage(self):
-        return self.pipeline.stages.filter(order__gt=self.order, optional=False).first()
+        return self.workflow.stages.filter(order__gt=self.order, optional=False).first()
 
     @cached_property
     def possible_successors(self):
         nms = self.next_mandatory_stage
-        pending = self.pipeline.stages.filter(order__gt=self.order)
+        pending = self.workflow.stages.filter(order__gt=self.order)
         if nms is not None:
             pending = pending.filter(order__lte=nms.order)
         return pending
 
 
-class TitlePipeline(TitleExtension):
-    pipeline = models.ForeignKey(
-        'pipelines.Pipeline',
+class WorkflowExtension(TitleExtension):
+    workflow = models.ForeignKey(
+        'workflows.Workflow',
         on_delete=models.CASCADE,
-        verbose_name=_('Pipeline'),
-        help_text=_('The pipeline set here is language specific.')
+        verbose_name=_('Workflow'),
+        help_text=_('The workflow set here is language specific.')
     )
 
     descendants = models.BooleanField(
         _('Descendants'),
-        help_text=_('Should this pipeline apply to descendant pages?'),
+        help_text=_('Should this workflow apply to descendant pages?'),
         default=True
     )
 
     class Meta:
-        verbose_name = _('Title pipeline')
-        verbose_name_plural = _('Title pipelines')
+        verbose_name = _('Workflow extension')
+        verbose_name_plural = _('Workflow extensions')
 
     def open(self, user):
         """
@@ -110,7 +110,7 @@ class TitlePipeline(TitleExtension):
         :param user:
                 User submitting changes.
         :rtype: Action
-        :return: Initial open-Action of a pipeline
+        :return: Initial open-Action of a workflow
         """
         # TODO
         return None
@@ -136,18 +136,18 @@ class Action(MP_Node):
         verbose_name=_('Title'),
     )
 
-    # persist pipeline in case the pipeline changes on the title
-    pipeline = models.ForeignKey(
-        'pipelines.Pipeline',
+    # persist workflow in case the workflow changes on the title
+    workflow = models.ForeignKey(
+        'workflows.Workflow',
         on_delete=models.CASCADE,
-        verbose_name=_('Pipeline'),
+        verbose_name=_('Workflow'),
     )
 
     stage = models.ForeignKey(
-        'pipelines.PipelineStage',
+        'workflows.WorkflowStage',
         on_delete=models.SET_NULL,
         verbose_name=_('Stage'),
-        # allow null for open action and if Stage is deleted on Pipeline
+        # allow null for open action and if Stage is deleted on Workflow
         null=True,
         default=None,
     )
@@ -186,8 +186,8 @@ class Action(MP_Node):
     )
 
     class Meta:
-        verbose_name = _('Pipeline action')
-        verbose_name_plural = _('Pipeline actions')
+        verbose_name = _('Workflow action')
+        verbose_name_plural = _('Workflow actions')
         unique_together = (('title', 'stage'),)
         ordering = ('depth', 'created')
 
@@ -214,7 +214,7 @@ class Action(MP_Node):
                 Stage to be approved. Must be valid successor Stage to this Stage.
         :param user:
                 User approving stage. Must be a member of Stage's group.
-        :type stage: PipelineStage
+        :type stage: WorkflowStage
         :rtype: Action
         :return: Approve-Action of stage
         """
@@ -229,7 +229,7 @@ class Action(MP_Node):
                 Stage to be rejected. Must be valid successor Stage to this Stage.
         :param user:
                 User rejecting stage. Must be a member of Stage's group.
-        :type stage: PipelineStage
+        :type stage: WorkflowStage
         :rtype: Action
         :return: Reject-Action of stage
         """
@@ -241,7 +241,7 @@ class Action(MP_Node):
         """
 
         :param user:
-                User canceling entire pipeline.
+                User canceling entire workflow.
         :rtype: Action
         :return: Cancel-Action
         """
