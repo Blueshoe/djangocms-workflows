@@ -94,6 +94,12 @@ class TitlePipeline(TitleExtension):
         help_text=_('The pipeline set here is language specific.')
     )
 
+    descendants = models.BooleanField(
+        _('Descendants'),
+        help_text=_('Should this pipeline apply to descendant pages?'),
+        default=True
+    )
+
     class Meta:
         verbose_name = _('Title pipeline')
         verbose_name_plural = _('Title pipelines')

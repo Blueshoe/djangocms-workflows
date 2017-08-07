@@ -21,6 +21,7 @@ def get_pipeline(title):
         return title.titlepipeline
     except TitlePipeline.DoesNotExist:
         pass
+    # TODO check for for custom pipeline on ancestor pages that apply to descendants
 
     # check for default pipeline
     try:
