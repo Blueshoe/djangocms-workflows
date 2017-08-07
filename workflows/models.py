@@ -2,6 +2,7 @@
 
 from cms.extensions.models import TitleExtension
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
@@ -38,6 +39,10 @@ class Workflow(models.Model):
     @cached_property
     def mandatory_stages(self):
         return self.stages.filter(optional=False)
+
+    @cached_property
+    def first_mandatory_stage(self):
+        return self.mandatory_stages.first()
 
 
 class WorkflowStage(models.Model):
@@ -202,10 +207,27 @@ class Action(MP_Node):
     def get_author(self):
         """Return author of changes.
 
-        :rtype: get_user_model()
+        :rtype: django.contrib.auth.models.AbstractUser
         :return: author of changes
         """
         return self.get_request().user
+
+    def next_mandatory_stage(self):
+        """
+        :rtype: WorkflowStage
+        :return:
+        """
+        if self.action_type == self.REQUEST:
+            return self.workflow.first_mandatory_stage
+        if self.action_type == self.APPROVE and self.stage:
+            return self.stage.next_mandatory_stage
+        return None
+
+    def next_mandatory_stage_editors(self):
+        nms = self.next_mandatory_stage()
+        if not nms:
+            return get_user_model().objects.none()
+        return nms.group.user_set.all()
 
     def approve(self, stage, user):
         """
