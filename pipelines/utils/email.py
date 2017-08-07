@@ -26,7 +26,7 @@ SUBJECTS = {
 }
 
 
-def send_action_mails(action):
+def send_action_mails(action, editor=None):
     """
 
     :param action: Action triggering mails
