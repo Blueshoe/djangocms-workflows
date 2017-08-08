@@ -1,5 +1,9 @@
 # Created by https://www.gitignore.io
 
+# example project static + media
+example/static/
+example/media/
+
 ### SublimeText ###
 # cache files for sublime text
 *.tmlanguage.cache
