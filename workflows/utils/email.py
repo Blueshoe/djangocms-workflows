@@ -57,13 +57,13 @@ def send_action_mails(action, editor=None):
     if AUTHOR in subjects:
         subject = subjects[AUTHOR].__format__(**context)
         txt_template = 'workflows/emails/author_{}.txt'.format(action.action_type)
-        to = [action.get_author().email]
+        to = get_to(action, to_user=action.get_author())
         send_mail(subject, txt_template, to, context=context)
         sent = True
 
     if EDITOR in subjects:
         subject = subjects[EDITOR].__format__(**context)
-        to = get_editor_to(action, editor=editor)
+        to = get_to(action, to_user=editor)
         if to:
             txt_template = 'workflows/emails/editor_{}.txt'.format(action.action_type)
             send_mail(subject, txt_template, to, context=context)
@@ -87,14 +87,14 @@ def _context(action):
     return context
 
 
-def get_editor_to(action, editor=None):
+def get_to(action, to_user=None):
     """
-    :type editor: django.contrib.auth.models.AbstractUser
-    :param editor:
+    :type to_user: django.contrib.auth.models.AbstractUser
+    :param to_user:
     :return:
     """
-    if editor:
-        return [editor.email]
+    if to_user:
+        return [to_user.email]
     return [user.email for user in action.next_mandatory_stage_editors()]
 
 
