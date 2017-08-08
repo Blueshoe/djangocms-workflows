@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 
 from adminsortable2.admin import SortableInlineAdminMixin
+from cms.extensions.admin import TitleExtensionAdmin
 from django.contrib import admin
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 
+from workflows.models import WorkflowExtension
 from .models import WorkflowStage, Workflow
 
 
@@ -51,6 +53,16 @@ class WorkflowAdmin(admin.ModelAdmin):
         return qs
 
 
+admin.site.register(Workflow, WorkflowAdmin)
+
+
+class WorkflowExtensionAdmin(TitleExtensionAdmin):
+    pass
+
+
+admin.site.register(WorkflowExtension, WorkflowExtensionAdmin)
+
+
+
 # TODO more required admins: TitleExtensionAdmin, PageAdmin
 
-admin.site.register(Workflow, WorkflowAdmin)

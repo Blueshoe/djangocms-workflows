@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+from cms.extensions.extension_pool import extension_pool
 from cms.extensions.models import TitleExtension
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -31,6 +31,9 @@ class Workflow(models.Model):
         if self.default:
             Workflow.objects.filter(default=True).exclude(pk=self.pk).update(default=False)
         super(Workflow, self).save(**kwargs)
+
+    def __str__(self):
+        return self.name
 
     @classmethod
     def default_workflow(cls):
@@ -109,6 +112,13 @@ class WorkflowExtension(TitleExtension):
         verbose_name = _('Workflow extension')
         verbose_name_plural = _('Workflow extensions')
 
+    def __str__(self):
+        return '{title} ({lang}): {workflow}'.format(
+            title=self.extended_object.title,
+            lang=self.extended_object.language,
+            workflow=self.workflow
+        )
+
     def open(self, user):
         """
 
@@ -119,6 +129,13 @@ class WorkflowExtension(TitleExtension):
         """
         # TODO
         return None
+
+    @cached_property
+    def language(self):
+        return self.extended_object.language
+
+
+extension_pool.register(WorkflowExtension)
 
 
 class Action(MP_Node):
