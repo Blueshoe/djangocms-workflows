@@ -47,6 +47,12 @@ class Workflow(models.Model):
     def first_mandatory_stage(self):
         return self.mandatory_stages.first()
 
+    def possible_next_stages(self, stage=None):
+        if stage:
+            return stage.possible_next_stages
+        fms = self.first_mandatory_stage
+        return self.stages.filter(order__lte=fms.order)
+
 
 class WorkflowStage(models.Model):
     workflow = models.ForeignKey(
@@ -86,7 +92,7 @@ class WorkflowStage(models.Model):
         return self.workflow.stages.filter(order__gt=self.order, optional=False).first()
 
     @cached_property
-    def possible_successors(self):
+    def possible_next_stages(self):
         nms = self.next_mandatory_stage
         pending = self.workflow.stages.filter(order__gt=self.order)
         if nms is not None:
@@ -245,6 +251,10 @@ class Action(MP_Node):
         if not nms:
             return get_user_model().objects.none()
         return nms.group.user_set.all()
+
+    def possible_next_stages(self):
+        return self.workflow.possible_next_stages(self.stage)
+
 
     def approve(self, stage, user):
         """

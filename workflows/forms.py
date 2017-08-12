@@ -12,18 +12,16 @@ from .utils.workflow import get_workflow
 # TODO form for Workflow admin (esp. Formset for Stage inlines)
 
 
-# TODO forms (hierarchy) to handle 4 different actions
 class ActionForm(forms.ModelForm):
-    editor = forms.ModelChoiceField(
-        label=_('editor'),
-        queryset=get_user_model().objects.none(),
+    message = forms.CharField(
+        label=_('Message'),
         required=False,
+        widget=forms.Textarea()
     )
 
     class Meta:
         model = Action
         fields = ('message',)
-        sequence = ('editor', 'message')
 
     def __init__(self, *args, **kwargs):
         self.stage = kwargs.pop('stage', None)
