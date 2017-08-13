@@ -53,6 +53,11 @@ class Workflow(models.Model):
         fms = self.first_mandatory_stage
         return self.stages.filter(order__lte=fms.order)
 
+    def next_mandatory_stage(self, stage=None):
+        if stage is None:
+            return self.first_mandatory_stage
+        return self.mandatory_stages.filter(order__gt=stage.order).first()
+
 
 class WorkflowStage(models.Model):
     workflow = models.ForeignKey(
@@ -219,6 +224,20 @@ class Action(MP_Node):
         unique_together = (('title', 'stage'),)
         ordering = ('depth', 'created')
 
+    def save(self, **kwargs):
+        if self.action_type == self.REQUEST:
+            try:
+                previous = Action.get_requests(title=self.title).exclude(pk=self.pk).latest('created')
+            except Action.DoesNotExist:
+                pass
+            else:
+                assert previous.is_closed(), 'Previous request must be closed before opening a new request'
+        super(Action, self).save(**kwargs)
+
+    def is_closed(self):
+        latest_action = self.get_tree(parent=self).latest('depth')
+        return latest_action.action_type in (self.REJECT, self.CANCEL, self.FINISH)
+
     def get_request(self):
         """Root of this chain of actions.
 
@@ -226,6 +245,13 @@ class Action(MP_Node):
         :return:
         """
         return self.get_root()
+
+    @classmethod
+    def get_requests(cls, title=None):
+        requests = cls.get_root_nodes()
+        if title:
+            requests = requests.filter(title=title)
+        return requests
 
     def get_author(self):
         """Return author of changes.
@@ -254,7 +280,6 @@ class Action(MP_Node):
 
     def possible_next_stages(self):
         return self.workflow.possible_next_stages(self.stage)
-
 
     def approve(self, stage, user):
         """
@@ -296,3 +321,6 @@ class Action(MP_Node):
         """
         # TODO
         return None
+
+    def get_next_stage(self, user):
+        return self.possible_next_stages().filter(group__user_set=user).last()

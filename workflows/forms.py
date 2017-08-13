@@ -2,6 +2,7 @@
 
 from django import forms
 from django.contrib.auth import get_user_model
+from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _
 
 from workflows.utils.action import get_current_action
@@ -19,31 +20,39 @@ class ActionForm(forms.ModelForm):
         widget=forms.Textarea()
     )
 
+    editor = forms.ModelChoiceField(
+        label=_('Editor'),
+        queryset=get_user_model().objects.none(),
+        required=False
+    )
+
     class Meta:
         model = Action
         fields = ('message',)
 
     def __init__(self, *args, **kwargs):
+        self.title = kwargs.pop('title')
+        self.workflow = kwargs.pop('workflow')
         self.stage = kwargs.pop('stage', None)
         self.action_type = kwargs.pop('action_type')  # {open, approve, reject, cancel}
-        self.title = kwargs.pop('title')
         self.current_action = get_current_action(self.title)
-        self.workflow = get_workflow(self.title)
         self.request = kwargs.pop('request')
         self.user = self.request.user
         super(ActionForm, self).__init__(*args, **kwargs)
+        self.adjust_editor()
 
-        if 'moderator' in self.fields:
-            self.configure_moderator_field()
+    @property
+    def editor(self):
+        return self.cleaned_data.get('editor')
 
-    def get_moderator(self):
-        return self.cleaned_data.get('moderator')
-
-    def configure_moderator_field(self):
-        next_role = self.workflow.first_step.role
-        users = next_role.get_users_queryset().exclude(pk=self.user.pk)
-        self.fields['moderator'].empty_label = ugettext('Any {role}').format(role=next_role.name)
-        self.fields['moderator'].queryset = users
+    def adjust_editor(self):
+        next_stage = self.workflow.next_mandatory_stage(self.stage)
+        if self.action_type in (Action.CANCEL, Action.REJECT) or next_stage is None:
+            self.fields.pop('editor', None)  # no editor can be chosen
+            return
+        group = next_stage.group
+        self.fields['editor'].queryset = group.user_set.all()
+        self.fields['editor'].empty_label = _('Any {}').format(group.name)
 
     def save(self):
         # TODO
