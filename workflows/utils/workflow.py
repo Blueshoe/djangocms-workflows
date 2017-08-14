@@ -40,14 +40,3 @@ def get_workflow(title):
     except Workflow.MultipleObjectsReturned:
         logger.warning('Multiple default workflows set. This should not happen!')
         raise
-
-
-def get_current_request(title):
-    workflow = get_workflow(title)
-    if workflow is None:
-        return None
-    try:
-        # there can only be one open request per title at a time and it must be the last
-        return Action.get_root_nodes().filter(title=title).latest('created')
-    except Action.DoesNotExist:
-        return None

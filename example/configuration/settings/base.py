@@ -131,7 +131,6 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'cms',
     'adminsortable2',
-    'djangocms_moderation',
     'menus',
     'sekizai',
     'treebeard',
@@ -150,6 +149,7 @@ INSTALLED_APPS = (
     'djangocms_video',
     'configuration',  # needed for templates
     'django_extensions',
+    # 'djangocms_moderation',
     'workflows'
 )
 

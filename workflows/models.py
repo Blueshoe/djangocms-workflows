@@ -281,6 +281,23 @@ class Action(MP_Node):
     def possible_next_stages(self):
         return self.workflow.possible_next_stages(self.stage)
 
+    def last_action(self):
+        """
+        :rtype: Action
+        """
+        return self.get_descendants().latest('depth')
+
+    def is_publishable(self):
+        """
+        :rtype: bool
+        """
+        if self.is_closed():
+            return False
+        last_action = self.last_action()
+        if last_action.action_type != self.APPROVE:
+            return False
+        return last_action.next_mandatory_stage() is None
+
     def approve(self, stage, user):
         """
 
@@ -323,4 +340,6 @@ class Action(MP_Node):
         return None
 
     def get_next_stage(self, user):
+        if self.is_closed():
+            return None
         return self.possible_next_stages().filter(group__user_set=user).last()

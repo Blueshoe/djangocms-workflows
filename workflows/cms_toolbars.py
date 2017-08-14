@@ -1,13 +1,36 @@
 # -*- coding: utf-8 -*-
-
+from cms.cms_toolbars import PlaceholderToolbar, PageToolbar
+from cms.toolbar.items import ModalButton, Dropdown, DropdownToggleButton
 from cms.toolbar_pool import toolbar_pool
 from cms.extensions.toolbar import ExtensionToolbar
+from cms.utils.urlutils import admin_reverse
+from django.utils import translation
 from django.utils.translation import ugettext_lazy as _
+
+
+from workflows.models import Action
+from workflows.utils import is_editable
+from workflows.utils.action import get_current_request, get_current_action
+from workflows.utils.workflow import get_workflow
 from .models import WorkflowExtension
 from cms.utils import get_language_list  # needed to get the page's languages
 
 
-@toolbar_pool.register
+def get_page_toolbar():
+    try:
+        return toolbar_pool.toolbars.pop('cms.cms_toolbars.PageToolbar')
+    except KeyError:
+        return PageToolbar
+
+
+def get_placeholder_toolbar():
+    try:
+        return toolbar_pool.toolbars.pop('cms.cms_toolbars.PlaceholderToolbar')
+    except KeyError:
+        return PlaceholderToolbar
+
+
+# @toolbar_pool.register
 class RatingExtensionToolbar(ExtensionToolbar):
     # As described in the docs
 
@@ -41,3 +64,128 @@ class RatingExtensionToolbar(ExtensionToolbar):
                     url=url,
                     disabled=not self.toolbar.edit_mode
                 )
+
+
+class WorkflowPlaceholderToolbar(get_placeholder_toolbar()):
+    def __init__(self, *args, **kwargs):
+        super(WorkflowPlaceholderToolbar, self).__init__(*args, **kwargs)
+        self.editable = True
+
+    def init_from_request(self):
+        super(WorkflowPlaceholderToolbar, self).init_from_request()
+        self.editable = is_editable(self.page.title_set.filter(language=self.current_lang).first())
+        self.toolbar.content_renderer._placeholders_are_editable = self.editable
+
+    def add_structure_mode(self):
+        if self.editable:
+            return super(WorkflowPlaceholderToolbar, self).add_structure_mode()
+
+
+class WorkflowPageToolbar(PageToolbar):
+    WORKFLOW_URL_NAME = 'workflow_{}'
+    BUTTON_NAMES = {
+        Action.REQUEST: _('Request'),
+        Action.APPROVE: _('Approve'),
+        Action.REJECT: _('Reject'),
+        Action.CANCEL: _('Cancel'),
+    }
+
+    def init_from_request(self):
+        super(WorkflowPageToolbar, self).init_from_request()
+        self.title = self.page.title_set.filter(language=self.current_lang).first()
+        self.workflow = get_workflow(self.title)
+        self.current_request = get_current_request(self.title)
+        self.current_action = get_current_action(self.title)
+        self.user = self.request.user
+        self.next_stage = self.current_action.get_next_stage(self.user) if self.current_action else None
+        self.editable = is_editable(self.title)
+
+    # def add_page_menu(self):
+    #     # Page menu is disabled if user is in page under apphooked page
+    #     disabled = self.in_apphook() and not self.in_apphook_root()
+    #
+    #     if not disabled:
+    #         # Otherwise disable the menu if there's an active moderation
+    #         # request.
+    #         disabled = bool(self.moderation_request)
+    #
+    #     self.toolbar.get_or_create_menu(
+    #         PAGE_MENU_IDENTIFIER,
+    #         _('Page'),
+    #         position=1,
+    #         disabled=disabled
+    #     )
+    #
+    #     if not disabled:
+    #         # The menu is enabled so populate it with the default entries
+    #         super(ExtendedPageToolbar, self).add_page_menu()
+
+    def has_publish_permission(self):
+        if self.workflow:
+            if self.current_request is None or not self.current_request.is_publishable():
+                return False
+        return super(WorkflowPageToolbar, self).has_publish_permission()
+
+    def has_permission(self, action_type):
+        if self.workflow is None:
+            return False
+        if action_type == Action.CANCEL:
+            return self.current_request is not None and not self.current_request.is_closed()
+        if action_type == Action.REQUEST:
+            if not self.has_dirty_objects():
+                return False
+            return self.current_request is None or self.current_request.is_closed()
+        if action_type in (Action.APPROVE, Action.REJECT):
+            return self.current_action and self.current_action.get_next_stage(self.user)
+        raise ValueError('Unknown action_type: {}'.format(action_type))
+
+    def _button(self, action_type):
+        with translation.override(self.current_lang):
+            url = admin_reverse(
+                self.WORKFLOW_URL_NAME.format(action_type),
+                args=[self.page.pk, self.current_lang],
+            )
+        return ModalButton(name=self.BUTTON_NAMES[action_type], url=url)
+
+    def add_button(self, menu, action_type):
+        if self.has_permission(action_type):
+            menu.buttons.append(self._button(action_type))
+
+    def post_template_populate(self):
+        self.init_placeholders()
+        self.add_draft_live()
+        self.add_publish_menu()
+
+    def add_publish_button(self, classes=('cms-btn-action', 'cms-btn-publish',)):
+        # only do dirty lookups if publish permission is granted else button isn't added anyway
+        if self.toolbar.edit_mode and self.has_publish_permission():
+            button = self.get_publish_button(classes=classes)
+            self.toolbar.add_item(button)
+
+    def add_publish_menu(self, classes=('cms-btn-action', 'cms-btn-publish', 'cms-btn-publish-active',)):
+        workflow_dropdown = Dropdown(side=self.toolbar.RIGHT)
+        workflow_dropdown.add_primary_button(
+            DropdownToggleButton(name=_('Publish'))
+        )
+        if self.has_publish_permission():
+            workflow_dropdown.buttons.extend(self.get_publish_button())
+        for action_type in (Action.REQUEST, Action.APPROVE, Action.REJECT, Action.CANCEL):
+            self.add_button(workflow_dropdown, action_type)
+        self.toolbar.add_item(workflow_dropdown)
+
+    # def get_publish_button(self, classes=None):
+    #     button = super(ExtendedPageToolbar, self).get_publish_button(['cms-btn-publish'])
+    #     publish_dropdown = Dropdown(side=self.toolbar.RIGHT)
+    #     publish_dropdown.add_primary_button(
+    #         DropdownToggleButton(name=_('Moderation'))
+    #     )
+    #     publish_dropdown.buttons.extend(button.buttons)
+    #     publish_dropdown.buttons.append(self.get_cancel_moderation_button())
+    #     return publish_dropdown
+
+
+# print(toolbar_pool.toolbars)
+
+toolbar_pool.register(RatingExtensionToolbar)
+toolbar_pool.toolbars['cms.cms_toolbars.PlaceholderToolbar'] = WorkflowPlaceholderToolbar
+toolbar_pool.toolbars['cms.cms_toolbars.PageToolbar'] = WorkflowPageToolbar

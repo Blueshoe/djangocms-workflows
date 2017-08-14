@@ -1,0 +1,26 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_modify %}
+
+{# most parts copied from admin/change_form.html #}
+{% block content %}
+
+    <form action="{{ form_url }}" method="post" id="{{ opts.model_name }}_form" novalidate>
+        {% csrf_token %}
+        {% if form.errors %}
+            <p class="errornote">
+            {% if form.errors|length == 1 %}
+                {% trans "Please correct the error below." %}
+            {% else %}
+                {% trans "Please correct the errors below." %}
+            {% endif %}
+            </p>
+            {{ form.non_field_errors }}
+        {% endif %}
+        {{ form }}
+
+        {# from admin/submit_line.html #}
+        <div class="submit-row">
+            <input type="submit" value="{{ save_label }}" class="default" name="_save" />
+        </div>
+    </form>
+{% endblock %}
