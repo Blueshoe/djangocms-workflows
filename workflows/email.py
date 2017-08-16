@@ -5,8 +5,7 @@ from django.template.loader import render_to_string
 from django.utils.translation import ugettext_lazy as _
 from cms.models import Title
 
-from .action import get_name
-from ..models import Action
+from workflows.models import Action
 
 
 EDITOR, AUTHOR = 'editor', 'author'
@@ -55,14 +54,14 @@ def send_action_mails(action, editor=None):
     context = _context(action)
 
     if AUTHOR in subjects:
-        subject = subjects[AUTHOR].__format__(**context)
+        subject = subjects[AUTHOR].format(**context)
         txt_template = 'workflows/emails/author_{}.txt'.format(action.action_type)
         to = get_to(action, to_user=action.get_author())
         send_mail(subject, txt_template, to, context=context)
         sent = True
 
     if EDITOR in subjects:
-        subject = subjects[EDITOR].__format__(**context)
+        subject = subjects[EDITOR].format(**context)
         to = get_to(action, to_user=editor)
         if to:
             txt_template = 'workflows/emails/editor_{}.txt'.format(action.action_type)
@@ -109,3 +108,12 @@ def get_absolute_url(title):
     path = title.page.get_absolute_url(language=title.language).lstrip('/')
     return '{}://{}/{}'.format(scheme, domain, path)
 
+
+def get_name(user, default=None):
+    try:
+        return user.get_full_name()
+    except AttributeError:
+        try:
+            return user.get_username()
+        except AttributeError:
+            return default or str(user)

@@ -4,22 +4,16 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.utils.translation import ugettext_lazy as _
 
-from workflows.utils.action import get_current_action
-from workflows.utils.email import send_action_mails
 from .models import Action
 
-
-# TODO form for Workflow admin (esp. Formset for Stage inlines)
-
-
 class ActionForm(forms.Form):
-    message = forms.CharField(
+    message_ = forms.CharField(
         label=_('Message'),
         required=False,
-        widget=forms.Textarea()
+        widget=forms.Textarea
     )
 
-    editor = forms.ModelChoiceField(
+    editor_ = forms.ModelChoiceField(
         label=_('Editor'),
         queryset=get_user_model().objects.none(),
         required=False
@@ -33,7 +27,8 @@ class ActionForm(forms.Form):
         self.action_type = kwargs.pop('action_type')  # {open, approve, reject, cancel}
         self.next_stage = self.workflow.next_mandatory_stage(self.stage)
         self.group = getattr(self.stage, 'group', None)
-        self.current_action = get_current_action(self.title)
+        cr = Action.get_current_request(self.title)
+        self.current_action = None if (not cr or cr.is_closed()) else cr.last_action()
         self.user = self.request.user
         super(ActionForm, self).__init__(*args, **kwargs)
         self.adjust_editor()
@@ -58,21 +53,20 @@ class ActionForm(forms.Form):
         """
         :rtype: str
         """
-        return self.cleaned_data.get('message', '')
+        return self.cleaned_data.get('message_', '')
 
     def adjust_editor(self):
         if self.action_type in (Action.CANCEL, Action.REJECT) or self.next_stage is None:
-            self.fields.pop('editor', None)  # no editor can be chosen
+            self.fields.pop('editor_', None)  # no editor can be chosen
             return
         group = self.next_stage.group
-        self.fields['editor'].queryset = group.user_set.all()
-        self.fields['editor'].empty_label = _('Any {}').format(group.name)
+        self.fields['editor_'].queryset = group.user_set.all()
+        self.fields['editor_'].empty_label = _('Any {}').format(group.name)
 
     def save(self):
         """
         :rtype: Action
         """
-        self.current_action = Action()
         init_kwargs = {
             attr: getattr(self, attr) for attr in
             ('message', 'user', 'title', 'workflow', 'stage', 'action_type', 'group')

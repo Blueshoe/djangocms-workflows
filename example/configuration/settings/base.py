@@ -33,7 +33,7 @@ SECRET_KEY = 'rp2p$%m%f13(x_098t29sre0=(&t_)k4-qu%d)cqs6i+_rfp7m'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -71,7 +71,7 @@ MEDIA_ROOT = os.path.join(DATA_DIR, '../media')
 STATIC_ROOT = os.path.join(DATA_DIR, '../static')
 
 STATICFILES_DIRS = (
-    os.path.join(BASE_DIR, 'static'),
+    # os.path.join(BASE_DIR, '../static'),
 )
 SITE_ID = 1
 
@@ -150,7 +150,7 @@ INSTALLED_APPS = (
     'configuration',  # needed for templates
     'django_extensions',
     # 'djangocms_moderation',
-    'workflows'
+    'workflows.apps.WorkflowsConfig'
 )
 
 LANGUAGES = (

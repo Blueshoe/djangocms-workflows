@@ -10,9 +10,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 
-from workflows.models import WorkflowExtension
-from workflows.utils.action import get_current_request
-from workflows.utils.workflow import get_workflow
+from workflows.models import WorkflowExtension, Action
 from workflows.views import WORKFLOW_VIEWS
 from .models import WorkflowStage, Workflow
 
@@ -59,7 +57,6 @@ class WorkflowAdmin(admin.ModelAdmin):
         qs = qs.prefetch_related('stages')
         return qs
 
-
 admin.site.register(Workflow, WorkflowAdmin)
 
 
@@ -96,8 +93,8 @@ class WorkflowPageAdmin(PageAdmin):
 
     def publish_page(self, request, page_id, language):
         title = get_object_or_404(Title, page_id=page_id, language=language, publisher_is_draft=True)
-        workflow = get_workflow(title)
-        current_request = get_current_request(title)
+        workflow = Workflow.get_workflow(title)
+        current_request = Action.get_current_request(title)
 
         # legal publishing scenarios: no workflow defined for title OR current request is open and approved
         if not workflow or (current_request and current_request.is_publishable()):

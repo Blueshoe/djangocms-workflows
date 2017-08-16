@@ -1,25 +1,22 @@
 # -*- coding: utf-8 -*-
 from cms.models import Page, Title
-from cms.utils.urlutils import admin_reverse
 from django.contrib import messages
+from django.core.urlresolvers import reverse
 from django.http import Http404
 from django.shortcuts import render, redirect
-from django.utils.translation import ugettext_lazy as _
-from django.core.urlresolvers import reverse
-
 # Create your views here.
-# TODO Views handling action creation
+
 from django.utils.functional import cached_property
+from django.utils.translation import ugettext_lazy as _
 from django.views.generic.edit import FormView
 
+from workflows.email import send_action_mails
 from workflows.forms import ActionForm
-from workflows.models import Action
-from workflows.utils import get_current_request
-from workflows.utils.email import send_action_mails
-from workflows.utils.workflow import get_workflow
+from workflows.models import Action, Workflow
 
 
-NO_WORKFLOW = _('')  # TODO
+# TODO proper messages
+NO_WORKFLOW = _('')
 ACTIVE_REQUEST = _('')
 NO_ACTIVE_REQUEST = _('')
 USER_NOT_ALLOWED = _('')
@@ -28,10 +25,12 @@ CLOSE_FRAME = 'admin/cms/page/close_frame.html'
 
 
 class ActionView(FormView):
+    template_name = 'admin/action_form.html'
     form_class = ActionForm
     action_type = None
     admin_title = None
     admin_save_label = None
+    confirm_message = _('Done')
 
     # def dispatch(self, request, *args, **kwargs):
     #     return super(ActionView, self).dispatch(request, *args, **kwargs)
@@ -72,7 +71,7 @@ class ActionView(FormView):
         """
         :rtype: workflows.models.Workflow
         """
-        return get_workflow(self.title)
+        return Workflow.get_workflow(self.title)
 
     @cached_property
     def user(self):
@@ -86,7 +85,7 @@ class ActionView(FormView):
         """
         :rtype: Action
         """
-        return get_current_request(self.title)
+        return Action.get_current_request(self.title)
 
     @cached_property
     def stage(self):
@@ -132,17 +131,19 @@ class ActionView(FormView):
     def form_valid(self, form):
         action = form.save()
         send_action_mails(action, editor=form.editor)
-        messages.success(self.request, self.success_message)
-        # context = self.get_context_data(form=form)
-        return render(self.request, CLOSE_FRAME, {})
+        messages.success(self.request, self.confirm_message)
+        # context variables needed for close_frame to work
+        return render(self.request, CLOSE_FRAME, {
+            'opts': Action._meta,
+            'root_path': reverse('admin:index'),
+        })
 
     def get_context_data(self, **kwargs):
         ctx = super(ActionView, self).get_context_data(**kwargs)
         form = ctx.get('form')
         # Admin context
         ctx.update({
-            # 'title': self.admin_title,
-            'has_change_permission': True,
+            'title': self.admin_title,
             'opts': Action._meta,
             'root_path': reverse('admin:index'),
             'adminform': ctx.get('form'),
@@ -158,6 +159,7 @@ class RequestView(ActionView):
     action_type = Action.REQUEST
     admin_title = _('Submit request for changes')
     admin_save_label = _('Submit request for changes')
+    confirm_message = _('Changes successfully submitted for approval')
 
     def validate(self):
         super(RequestView, self).validate()
@@ -178,18 +180,21 @@ class ApproveView(ApproveRejectMixinView, ActionView):
     action_type = Action.APPROVE
     admin_title = _('Approve request')
     admin_save_label = admin_title
+    confirm_message = _('Request successfully approved')
 
 
 class RejectView(ApproveRejectMixinView, ActionView):
     action_type = Action.REJECT
     admin_title = _('Reject request')
     admin_save_label = admin_title
+    confirm_message = _('Request successfully rejected')
 
 
 class CancelView(ActionView):
     action_type = Action.CANCEL
     admin_title = _('Cancel request')
     admin_save_label = admin_title
+    confirm_message = _('Request successfully cancelled')
 
 
 WORKFLOW_VIEWS = {

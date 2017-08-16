@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
+
 from cms.extensions.extension_pool import extension_pool
 from cms.extensions.models import TitleExtension
+from cms.models import Title
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 from treebeard.mp_tree import MP_Node
+
+from .logging import logger
 
 
 class Workflow(models.Model):
@@ -37,7 +41,40 @@ class Workflow(models.Model):
 
     @classmethod
     def default_workflow(cls):
-        return cls.objects.get(default=True)
+        try:
+            return cls.objects.get(default=True)
+        except cls.DoesNotExist:
+            return None
+        except cls.MultipleObjectsReturned:
+            logger.warning('Multiple default workflows set. This should not happen!')
+            raise
+
+    @classmethod
+    def get_workflow(cls, title):
+        """Returns appropriate workflow for this title.
+
+        :type title: Title
+        :rtype: Workflow | None
+        :raises: Workflow.MultipleObjectsReturned
+        """
+        # 1. check for custom workflow
+        try:
+            return title.workflowextension.workflow
+        except WorkflowExtension.DoesNotExist:
+            pass
+
+        # 2. check for inherited workflow up the site tree
+        titles = Title.objects.filter(page__in=title.page.get_ancestors())  # all title of ancestor pages ...
+        titles = titles.filter(language=title.language)  # and same language ...
+        titles = titles.filter(workflowextension__descendants=True)  # that have an inherited workflow ...
+        titles = titles.order_by('-page__depth')  # bottom up
+        ancestor_title = titles.first()
+
+        if ancestor_title:
+            return ancestor_title.workflowextension.workflow
+
+        # 3. check for default workflow, might be None
+        return cls.default_workflow()
 
     @cached_property
     def mandatory_stages(self):
@@ -91,6 +128,9 @@ class WorkflowStage(models.Model):
         verbose_name_plural = _('Workflow stages')
         ordering = ('order',)
         unique_together = (('workflow', 'group'),)
+
+    def __str__(self):
+        return self.group.name + ('[optional]' if self.optional else '')
 
     @cached_property
     def next_mandatory_stage(self):
@@ -221,8 +261,11 @@ class Action(MP_Node):
     class Meta:
         verbose_name = _('Workflow action')
         verbose_name_plural = _('Workflow actions')
-        unique_together = (('title', 'stage'),)
+        # unique_together = (('title', 'stage'),)
         ordering = ('depth', 'created')
+
+    def __str__(self):
+        return '#{}: {}'.format(self.title_id, self.action_type)
 
     def save(self, **kwargs):
         if self.action_type == self.REQUEST:
@@ -235,8 +278,7 @@ class Action(MP_Node):
         super(Action, self).save(**kwargs)
 
     def is_closed(self):
-        latest_action = self.get_tree(parent=self).latest('depth')
-        return latest_action.action_type in (self.REJECT, self.CANCEL, self.FINISH)
+        return self.last_action().action_type in (self.REJECT, self.CANCEL, self.FINISH)
 
     def get_request(self):
         """Root of this chain of actions.
@@ -245,13 +287,6 @@ class Action(MP_Node):
         :return:
         """
         return self.get_root()
-
-    @classmethod
-    def get_requests(cls, title=None):
-        requests = cls.get_root_nodes()
-        if title:
-            requests = requests.filter(title=title)
-        return requests
 
     def get_author(self):
         """Return author of changes.
@@ -285,7 +320,7 @@ class Action(MP_Node):
         """
         :rtype: Action
         """
-        return self.get_descendants().latest('depth')
+        return Action.get_tree(parent=self).latest('depth')
 
     def is_publishable(self):
         """
@@ -342,4 +377,47 @@ class Action(MP_Node):
     def get_next_stage(self, user):
         if self.is_closed():
             return None
-        return self.possible_next_stages().filter(group__user_set=user).last()
+        return self.possible_next_stages().filter(group__user=user).last()
+
+    @classmethod
+    def get_requests(cls, title=None):
+        requests = cls.get_root_nodes()
+        if title:
+            requests = requests.filter(title=title)
+        return requests
+
+    @classmethod
+    def get_current_request(cls, title):
+        """
+        :rtype: Action
+        """
+        workflow = Workflow.get_workflow(title)
+        if workflow is None:
+            return None
+        try:
+            # there can only be one open request per title at a time and it must be the last
+            return cls.get_requests(title=title).latest('created')
+        except cls.DoesNotExist:
+            return None
+
+    @classmethod
+    def get_current_action(cls, title):
+        """
+        :type title: Title
+        :param title:
+        :rtype: Action
+        """
+        latest_request = cls.get_current_request(title)
+        if latest_request:
+            return cls.get_tree(latest_request).latest('depth')
+        return None
+
+    @classmethod
+    def is_editable(cls, title):
+        """
+        :rtype: bool
+        """
+        current_request = cls.get_current_request(title)
+        if current_request is None:
+            return True
+        return current_request.is_closed()
