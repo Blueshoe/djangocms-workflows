@@ -4,6 +4,7 @@ from adminsortable2.admin import SortableInlineAdminMixin
 from cms.admin.pageadmin import PageAdmin
 from cms.extensions.admin import TitleExtensionAdmin
 from cms.models import Page, Title
+from cms.utils.urlutils import admin_reverse
 from django.conf.urls import url
 from django.contrib import admin, messages
 from django.shortcuts import get_object_or_404, redirect
@@ -19,14 +20,10 @@ from .models import WorkflowStage, Workflow
 
 
 class WorkflowStageInline(SortableInlineAdminMixin, admin.TabularInline):
-    # formset = WorkflowStepInlineFormSet
     model = WorkflowStage
 
     def get_extra(self, request, obj=None, **kwargs):
-
-        if obj and obj.pk:
-            return 0
-        return 1
+        return not (obj and obj.pk)
 
 
 class WorkflowAdmin(admin.ModelAdmin):
@@ -57,6 +54,7 @@ class WorkflowAdmin(admin.ModelAdmin):
         qs = qs.prefetch_related('stages')
         return qs
 
+
 admin.site.register(Workflow, WorkflowAdmin)
 
 
@@ -65,14 +63,6 @@ class WorkflowExtensionAdmin(TitleExtensionAdmin):
 
 
 admin.site.register(WorkflowExtension, WorkflowExtensionAdmin)
-
-#
-# def get_page_admin_class():
-#     if admin.site.is_registered(Page):
-#         pa = admin.site._registry.pop(Page).__class__
-#         admin.site.unregister(Page)
-#         return pa
-#     return PageAdmin
 
 
 class WorkflowPageAdmin(PageAdmin):
@@ -112,3 +102,58 @@ try:
     admin.site.unregister(Page)
 finally:
     admin.site.register(Page, WorkflowPageAdmin)
+
+
+class ActionAdmin(admin.ModelAdmin):
+    change_form_template = 'admin/action_change_form.html'
+    list_display = ['__str__', 'title', 'status_display', 'created', 'requires_action', 'page_link']
+    readonly_fields = ['title', 'workflow', 'user', 'message', 'created', 'status_display', 'page_link']
+    fields = [('title', 'workflow', 'user', 'created'), 'message', 'status_display', 'page_link']
+
+    class Media:
+        js = ['js/close_sideframe.js']
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def get_queryset(self, request):
+        self.request = request
+        qs = super(ActionAdmin, self).get_queryset(request)
+        qs = qs.filter(depth=1)
+        return qs
+
+    def requires_action(self, instance):
+        return self.request.user in instance.last_action().next_mandatory_stage_editors()
+    requires_action.short_description = _('Requires action')
+
+    def page_link(self, instance):
+        t = instance.title
+        # t = Title()
+        opts = Page._meta
+        return mark_safe('<a href="{link}" target="_top" class="link">{label}</a>'.format(
+            link=admin_reverse(
+                '{}_{}_preview_page'.format(opts.app_label, opts.model_name),
+                args=(t.page_id, t.language)
+            ),
+            # link=t.page.get_absolute_url(language=t.language),
+            label=_('View page')
+        ))
+    page_link.short_description = ''
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        extra = extra_context or {}
+        extra.update(self.extra_context(request, object_id))
+        return super(ActionAdmin, self).change_view(request, object_id, form_url=form_url, extra_context=extra)
+
+    def extra_context(self, request, object_id):
+        action = self.get_object(request, object_id)
+        actions = action.get_descendants().order_by('depth')
+        return {'actions': actions}
+    #
+    # def goto_page(self, request, *args, **kwargs):
+
+
+admin.site.register(Action, ActionAdmin)

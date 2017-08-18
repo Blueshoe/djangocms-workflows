@@ -1,0 +1,38 @@
+{% extends 'admin/change_form.html' %}
+{% load i18n %}
+
+{% block submit_buttons_bottom %}
+{#    no buttons#}
+{% endblock %}
+
+
+{% block after_field_sets %}
+    <table class="workflow-action-table">
+        <thead>
+        <tr>
+            <th>{% trans 'Action' %}</th>
+            <th>{% trans 'Stage' %}</th>
+            <th>{% trans 'User' %}</th>
+            <th>{% trans 'Date' %}</th>
+        </tr>
+        </thead>
+        <tbody>
+            {% for action in actions %}
+                <tr>
+                    <td>{{ action.get_action_type_display }}</td>
+                    <td>{{ action.stage|default:'' }}</td>
+                    <td>{{ action.user.get_full_name|default:action.user.get_username }}</td>
+                    <td>{{ action.created }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <script>
+{#    $ = django.jQuery;#}
+{#    $('.link').click(function(e) {#}
+{#        e.preventDefault();#}
+{#        new window.parent.CMS.Sideframe().close();#}
+{#        return false;#}
+{#    })#}
+{#    </script>#}
+{% endblock %}

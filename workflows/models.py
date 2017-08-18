@@ -194,13 +194,21 @@ class Action(MP_Node):
 
     """
     REQUEST, APPROVE, REJECT, CANCEL, FINISH = 'request', 'approve', 'reject', 'cancel', 'finish'
-
     TYPES = (
         (REQUEST, _('request')),
         (APPROVE, _('approve')),
         (REJECT, _('reject')),
         (CANCEL, _('cancel')),
         (FINISH, _('finish')),
+    )
+
+    OPEN, APPROVED, REJECTED, CANCELLED, PUBLISHED = 'open', 'approved', 'rejected', 'cancelled', 'published'
+    STATUS = (
+        (OPEN, _('open')),
+        (APPROVED, _('approved')),
+        (REJECTED, _('rejected')),
+        (CANCELLED, _('cancelled')),
+        (PUBLISHED, _('published')),
     )
 
     title = models.ForeignKey(
@@ -255,7 +263,6 @@ class Action(MP_Node):
 
     message = models.TextField(
         _('Message'),
-        help_text=_('Provide more information!')
     )
 
     class Meta:
@@ -333,51 +340,29 @@ class Action(MP_Node):
             return False
         return last_action.next_mandatory_stage() is None
 
-    def approve(self, stage, user):
-        """
-
-        :param stage:
-                Stage to be approved. Must be valid successor Stage to this Stage.
-        :param user:
-                User approving stage. Must be a member of Stage's group.
-        :type stage: WorkflowStage
-        :rtype: Action
-        :return: Approve-Action of stage
-        """
-        # this stage must be of type OPEN or APPROVED
-        # TODO
-        return None
-
-    def reject(self, stage, user):
-        """
-
-        :param stage:
-                Stage to be rejected. Must be valid successor Stage to this Stage.
-        :param user:
-                User rejecting stage. Must be a member of Stage's group.
-        :type stage: WorkflowStage
-        :rtype: Action
-        :return: Reject-Action of stage
-        """
-        # this stage must be of type OPEN or APPROVED
-        # TODO
-        return None
-
-    def cancel(self, user):
-        """
-
-        :param user:
-                User canceling entire workflow.
-        :rtype: Action
-        :return: Cancel-Action
-        """
-        # TODO
-        return None
-
     def get_next_stage(self, user):
         if self.is_closed():
             return None
         return self.possible_next_stages().filter(group__user=user).last()
+
+    @cached_property
+    def status(self):
+        la = self.last_action()
+        if la.action_type == self.CANCEL:
+            return self.CANCELLED
+        if la.action_type == self.FINISH:
+            return self.PUBLISHED
+        if la.action_type == self.REJECT:
+            return self.REJECTED
+        if self.is_publishable():
+            return self.APPROVED
+        else:
+            return self.OPEN
+
+    @cached_property
+    def status_display(self):
+        return dict(self.STATUS)[self.status]
+    status_display.short_description = _('Status')
 
     @classmethod
     def get_requests(cls, title=None):
