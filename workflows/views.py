@@ -15,25 +15,21 @@ from workflows.forms import ActionForm
 from workflows.models import Action, Workflow
 
 
-# TODO proper messages
-NO_WORKFLOW = _('')
-ACTIVE_REQUEST = _('')
-NO_ACTIVE_REQUEST = _('')
-USER_NOT_ALLOWED = _('')
+NO_WORKFLOW = _('There is no workflow for this page and language.')
+ACTIVE_REQUEST = _('There already is an active request for this page and language.')
+NO_ACTIVE_REQUEST = _('There is no active request for this page and language.')
+USER_NOT_ALLOWED = _('You are not allowed to approve or reject this request.')
 
 CLOSE_FRAME = 'admin/cms/page/close_frame.html'
 
 
 class ActionView(FormView):
-    template_name = 'admin/action_form.html'
+    template_name = 'workflows/admin/action_form.html'
     form_class = ActionForm
     action_type = None
     admin_title = None
     admin_save_label = None
     confirm_message = _('Done')
-
-    # def dispatch(self, request, *args, **kwargs):
-    #     return super(ActionView, self).dispatch(request, *args, **kwargs)
 
     @cached_property
     def language(self):
