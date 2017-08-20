@@ -181,7 +181,7 @@ CMS_LANGUAGES = {
         {
             'code': 'et',
             'name': _('Estonian'),
-            'fallbacks': ['en'],
+            'fallbacks': ['en', 'de'],
             'public': True,
         },
     ],

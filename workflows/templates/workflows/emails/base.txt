@@ -1,9 +1,5 @@
-{% load i18n %}
-{% block salutation %}{% endblock %}
-
+{% load i18n %}{% block salutation %}{% endblock %}
 {% block message %}{% endblock %}
-
-{% block action_message %}
-{% if message %}{% trans 'Message:' %}
+{% block action_message %}{% if message %}{% trans 'Message:' %}
 {{ message }}{% endif %}
 {% endblock %}

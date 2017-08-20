@@ -1,4 +1,2 @@
 {% extends 'workflows/emails/base.txt' %}{% load i18n %}
-{% block salutation %}
-{% blocktrans %}Dear {{ editor_name }},{% endblocktrans %}
-{% endblock %}
+{% block salutation %}{% blocktrans %}Dear {{ editor_name }},{% endblocktrans %}{% endblock %}
