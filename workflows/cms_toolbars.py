@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from cms.cms_toolbars import PlaceholderToolbar, PageToolbar
-from cms.toolbar.items import ModalButton, Dropdown, DropdownToggleButton
+from cms.toolbar.items import ModalButton, Dropdown, DropdownToggleButton, SideframeButton, BaseItem
+from cms.toolbar_base import CMSToolbar
 from cms.toolbar_pool import toolbar_pool
 from cms.extensions.toolbar import ExtensionToolbar
 from cms.utils.urlutils import admin_reverse
@@ -13,13 +14,6 @@ from .models import WorkflowExtension
 from cms.utils import get_language_list  # needed to get the page's languages
 
 
-def get_page_toolbar():
-    try:
-        return toolbar_pool.toolbars.pop('cms.cms_toolbars.PageToolbar')
-    except KeyError:
-        return PageToolbar
-
-
 def get_placeholder_toolbar():
     try:
         return toolbar_pool.toolbars.pop('cms.cms_toolbars.PlaceholderToolbar')
@@ -27,8 +21,14 @@ def get_placeholder_toolbar():
         return PlaceholderToolbar
 
 
-# @toolbar_pool.register
-class RatingExtensionToolbar(ExtensionToolbar):
+def get_page_toolbar():
+    try:
+        return toolbar_pool.toolbars.pop('cms.cms_toolbars.PageToolbar')
+    except KeyError:
+        return PageToolbar
+
+
+class WorkflowExtensionToolbar(ExtensionToolbar):
     # As described in the docs
 
     # defines the model for the current toolbar
@@ -79,13 +79,13 @@ class WorkflowPlaceholderToolbar(get_placeholder_toolbar()):
             return super(WorkflowPlaceholderToolbar, self).add_structure_mode()
 
 
-class WorkflowPageToolbar(PageToolbar):
+class WorkflowPageToolbar(get_page_toolbar()):
     WORKFLOW_URL_NAME = 'workflow_{}'
     BUTTON_NAMES = {
-        Action.REQUEST: _('Request'),
-        Action.APPROVE: _('Approve'),
-        Action.REJECT: _('Reject'),
-        Action.CANCEL: _('Cancel'),
+        Action.REQUEST: _('Request approval for changes'),
+        Action.APPROVE: _('Approve changes'),
+        Action.REJECT: _('Reject changes'),
+        Action.CANCEL: _('Cancel request'),
     }
 
     def init_from_request(self):
@@ -130,6 +130,20 @@ class WorkflowPageToolbar(PageToolbar):
         if self.has_permission(action_type):
             menu.buttons.append(self._button(action_type))
 
+    def add_action_admin_button(self, menu):
+            if self.current_request:
+                opts = Action._meta
+                button = SideframeButton(
+                    name=_('Show current request in admin'),
+                    url=admin_reverse(
+                        '{app_label}_{model_name}_change'.format(
+                            app_label=opts.app_label,
+                            model_name=opts.model_name
+                        ),
+                        args=[self.current_request.pk])
+                )
+                menu.buttons.append(button)
+
     def post_template_populate(self):
         self.init_placeholders()
         self.add_draft_live()
@@ -151,6 +165,7 @@ class WorkflowPageToolbar(PageToolbar):
                 classes=('cms-btn-action', 'cms-btn-publish', 'cms-btn-publish-active')).buttons)
         for action_type in (Action.REQUEST, Action.APPROVE, Action.REJECT, Action.CANCEL):
             self.add_button(workflow_dropdown, action_type)
+        self.add_action_admin_button(workflow_dropdown)
         if workflow_dropdown.buttons:
             self.toolbar.add_item(workflow_dropdown)
 
@@ -165,8 +180,28 @@ class WorkflowPageToolbar(PageToolbar):
     #     return publish_dropdown
 
 
-# print(toolbar_pool.toolbars)
+class EditorToolbar(CMSToolbar):
+    def populate(self):
+        action_dropdown = Dropdown(side=self.toolbar.RIGHT,)
+        action_dropdown.add_primary_button(
+            DropdownToggleButton(name=_('Action required!'))
+        )
+        actions = Action.titles_requiring_action(self.request.user)
+        if actions:
+            opts = Action._meta
+            view = '{app_label}_{model_name}_change'.format(
+                app_label=opts.app_label,
+                model_name=opts.model_name
+            )
+            for a in actions:
+                button = SideframeButton(
+                    name=str(a.title),
+                    url=admin_reverse(view, args=[a.get_request().pk])
+                )
+                action_dropdown.buttons.append(button)
+            self.toolbar.add_item(action_dropdown)
 
-toolbar_pool.register(RatingExtensionToolbar)
+toolbar_pool.register(EditorToolbar)
+toolbar_pool.register(WorkflowExtensionToolbar)
 toolbar_pool.toolbars['cms.cms_toolbars.PlaceholderToolbar'] = WorkflowPlaceholderToolbar
 toolbar_pool.toolbars['cms.cms_toolbars.PageToolbar'] = WorkflowPageToolbar
