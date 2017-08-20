@@ -57,6 +57,8 @@ class Workflow(models.Model):
         :rtype: Workflow | None
         :raises: Workflow.MultipleObjectsReturned
         """
+        if title is None:
+            return cls.default_workflow()
         # 1. check for custom workflow
         try:
             return title.workflowextension.workflow
@@ -193,22 +195,22 @@ class Action(MP_Node):
     """
 
     """
-    REQUEST, APPROVE, REJECT, CANCEL, FINISH = 'request', 'approve', 'reject', 'cancel', 'finish'
+    REQUEST, APPROVE, REJECT, CANCEL, PUBLISH = 'request', 'approve', 'reject', 'cancel', 'publish'
     TYPES = (
         (REQUEST, _('request')),
         (APPROVE, _('approve')),
         (REJECT, _('reject')),
         (CANCEL, _('cancel')),
-        (FINISH, _('finish')),
+        (PUBLISH, _('publish')),
     )
 
     OPEN, APPROVED, REJECTED, CANCELLED, PUBLISHED = 'open', 'approved', 'rejected', 'cancelled', 'published'
     STATUS = (
-        (OPEN, _('open')),
-        (APPROVED, _('approved')),
-        (REJECTED, _('rejected')),
-        (CANCELLED, _('cancelled')),
-        (PUBLISHED, _('published')),
+        (OPEN, _('Requested')),
+        (APPROVED, _('Approved')),
+        (REJECTED, _('Rejected')),
+        (CANCELLED, _('Cancelled')),
+        (PUBLISHED, _('Published')),
     )
 
     title = models.ForeignKey(
@@ -285,7 +287,7 @@ class Action(MP_Node):
         super(Action, self).save(**kwargs)
 
     def is_closed(self):
-        return self.last_action().action_type in (self.REJECT, self.CANCEL, self.FINISH)
+        return self.last_action().action_type in (self.REJECT, self.CANCEL, self.PUBLISH)
 
     def get_request(self):
         """Root of this chain of actions.
@@ -350,7 +352,7 @@ class Action(MP_Node):
         la = self.last_action()
         if la.action_type == self.CANCEL:
             return self.CANCELLED
-        if la.action_type == self.FINISH:
+        if la.action_type == self.PUBLISH:
             return self.PUBLISHED
         if la.action_type == self.REJECT:
             return self.REJECTED
@@ -406,3 +408,12 @@ class Action(MP_Node):
         if current_request is None:
             return True
         return current_request.is_closed()
+
+    @classmethod
+    def titles_requiring_action(cls, user):
+        actions = []
+        for title in Title.objects.filter(action__isnull=False).distinct():
+            ca = cls.get_current_action(title)
+            if user in ca.next_mandatory_stage_editors():
+                actions.append(ca)
+        return actions
