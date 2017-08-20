@@ -4,9 +4,11 @@ from adminsortable2.admin import SortableInlineAdminMixin
 from cms.admin.pageadmin import PageAdmin
 from cms.extensions.admin import TitleExtensionAdmin
 from cms.models import Page, Title
+from cms.utils.i18n import force_language
 from cms.utils.urlutils import admin_reverse
 from django.conf.urls import url
 from django.contrib import admin, messages
+from django.contrib.admin.sites import NotRegistered
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
@@ -17,6 +19,10 @@ from .models import WorkflowStage, Workflow
 
 
 # Register your models here.
+# def get_page_admin():
+#     pa = admin.site._registry.pop(Page, PageAdmin)
+#     print(pa)
+#     return pa.__class__
 
 
 class WorkflowStageInline(SortableInlineAdminMixin, admin.TabularInline):
@@ -34,7 +40,7 @@ class WorkflowAdmin(admin.ModelAdmin):
     class Media:
         # fixes display bug in sortable admin tabular inline
         css = {
-            'all': ('sortable_inline/sortable_inline.css',)
+            'all': ('workflows/css/sortable_inline.css',)
         }
 
     def list_stages(self, obj):
@@ -55,14 +61,8 @@ class WorkflowAdmin(admin.ModelAdmin):
         return qs
 
 
-admin.site.register(Workflow, WorkflowAdmin)
-
-
 class WorkflowExtensionAdmin(TitleExtensionAdmin):
     pass
-
-
-admin.site.register(WorkflowExtension, WorkflowExtensionAdmin)
 
 
 class WorkflowPageAdmin(PageAdmin):
@@ -98,20 +98,31 @@ class WorkflowPageAdmin(PageAdmin):
 
         return redirect(title.page.get_absolute_url(language, fallback=True))
 
-try:
-    admin.site.unregister(Page)
-finally:
-    admin.site.register(Page, WorkflowPageAdmin)
-
 
 class ActionAdmin(admin.ModelAdmin):
-    change_form_template = 'admin/action_change_form.html'
+    # custom templates
+    change_form_template = 'workflows/admin/action_change_form.html'
+    change_list_template = 'workflows/admin/action_change_list.html'
+
+    readonly_fields = ['title', 'workflow', 'status_display', 'page_link', 'requires_action']
     list_display = ['__str__', 'title', 'status_display', 'created', 'requires_action', 'page_link']
-    readonly_fields = ['title', 'workflow', 'user', 'message', 'created', 'status_display', 'page_link']
-    fields = [('title', 'workflow', 'user', 'created'), 'message', 'status_display', 'page_link']
+    fieldsets = (
+        (None, {
+            'fields': (('title', 'workflow', 'status_display', 'requires_action'),),
+            'classes': ('wide',)
+        }),
+        (_('Actions'), {
+            'fields': ('page_link',)
+        })
+    )
+
+    # newest requests first
+    ordering = ['-created']
 
     class Media:
-        js = ['js/close_sideframe.js']
+        css = {
+            'all': ('workflows/css/action_admin.css',)
+        }
 
     def has_add_permission(self, request):
         return False
@@ -127,21 +138,16 @@ class ActionAdmin(admin.ModelAdmin):
 
     def requires_action(self, instance):
         return self.request.user in instance.last_action().next_mandatory_stage_editors()
-    requires_action.short_description = _('Requires action')
+    requires_action.short_description = _('Requires your action')
+    requires_action.boolean = True
 
     def page_link(self, instance):
         t = instance.title
-        # t = Title()
-        opts = Page._meta
-        return mark_safe('<a href="{link}" target="_top" class="link">{label}</a>'.format(
-            link=admin_reverse(
-                '{}_{}_preview_page'.format(opts.app_label, opts.model_name),
-                args=(t.page_id, t.language)
-            ),
-            # link=t.page.get_absolute_url(language=t.language),
+        return mark_safe('<a href="{link}" target="_top" class="close-sideframe-link">{label}</a>'.format(
+            link=t.page.get_draft_url(language=t.language, fallback=False),
             label=_('View page')
         ))
-    page_link.short_description = ''
+    page_link.short_description = _('View page in browser')
 
     def change_view(self, request, object_id, form_url='', extra_context=None):
         extra = extra_context or {}
@@ -150,10 +156,17 @@ class ActionAdmin(admin.ModelAdmin):
 
     def extra_context(self, request, object_id):
         action = self.get_object(request, object_id)
-        actions = action.get_descendants().order_by('depth')
+        actions = Action.get_tree(parent=action).order_by('depth')
         return {'actions': actions}
     #
     # def goto_page(self, request, *args, **kwargs):
 
 
+admin.site.register(Workflow, WorkflowAdmin)
+admin.site.register(WorkflowExtension, WorkflowExtensionAdmin)
 admin.site.register(Action, ActionAdmin)
+try:
+    admin.site.unregister(Page)
+except NotRegistered:
+    pass
+admin.site.register(Page, WorkflowPageAdmin)
