@@ -111,8 +111,10 @@ def get_absolute_url(title):
 
 def get_name(user, default=None):
     try:
-        return user.get_full_name()
-    except AttributeError:
+        name = user.get_full_name()
+        assert name.split() != ''
+        return name
+    except (AttributeError, AssertionError):
         try:
             return user.get_username()
         except AttributeError:
