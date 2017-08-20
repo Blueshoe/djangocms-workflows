@@ -1,0 +1,8 @@
+<script>
+    $ = django.jQuery;
+    $('.close-sideframe-link').click(function(e) {
+{#        e.preventDefault();#}
+        new window.parent.CMS.Sideframe().close();
+{#        return false;#}
+    })
+</script>
