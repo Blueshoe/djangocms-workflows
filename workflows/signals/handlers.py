@@ -47,7 +47,7 @@ def close_moderation_request(sender, request=None, operation=None, translation=N
         workflow=current_action.workflow,
         # stage=None,
         # group=None,
-        action_type=Action.FINISH,
+        action_type=Action.PUBLISH,
         user=request.user,
         message=''
     )
