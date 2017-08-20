@@ -1,0 +1,11 @@
+.workflow-action-table {
+    border-collapse: collapse;
+    border: 1px solid black;
+    width: 100%;
+}
+
+table.workflow-action-table thead th, table.workflow-action-table tbody td {
+    border: 1px solid black;
+    padding: 10px;
+    background: none;
+}
