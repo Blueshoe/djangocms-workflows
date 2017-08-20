@@ -4,8 +4,6 @@ from adminsortable2.admin import SortableInlineAdminMixin
 from cms.admin.pageadmin import PageAdmin
 from cms.extensions.admin import TitleExtensionAdmin
 from cms.models import Page, Title
-from cms.utils.i18n import force_language
-from cms.utils.urlutils import admin_reverse
 from django.conf.urls import url
 from django.contrib import admin, messages
 from django.contrib.admin.sites import NotRegistered
