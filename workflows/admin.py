@@ -6,14 +6,12 @@ from cms.extensions.admin import TitleExtensionAdmin
 from cms.models import Page, Title
 from django.conf.urls import url
 from django.contrib import admin, messages
-from django.contrib.admin.sites import NotRegistered
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 
-from workflows.models import WorkflowExtension, Action
-from workflows.views import WORKFLOW_VIEWS
-from .models import WorkflowStage, Workflow
+from .models import WorkflowExtension, Action,WorkflowStage, Workflow
+from .views import WORKFLOW_VIEWS
 
 
 # Register your models here.
@@ -156,15 +154,12 @@ class ActionAdmin(admin.ModelAdmin):
         action = self.get_object(request, object_id)
         actions = Action.get_tree(parent=action).order_by('depth')
         return {'actions': actions}
-    #
-    # def goto_page(self, request, *args, **kwargs):
 
 
+if admin.site.is_registered(Page):
+    admin.site.unregister(Page)
+
+admin.site.register(Page, WorkflowPageAdmin)
 admin.site.register(Workflow, WorkflowAdmin)
 admin.site.register(WorkflowExtension, WorkflowExtensionAdmin)
 admin.site.register(Action, ActionAdmin)
-try:
-    admin.site.unregister(Page)
-except NotRegistered:
-    pass
-admin.site.register(Page, WorkflowPageAdmin)
