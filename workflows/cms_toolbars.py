@@ -5,13 +5,11 @@ from cms.toolbar_base import CMSToolbar
 from cms.toolbar_pool import toolbar_pool
 from cms.extensions.toolbar import ExtensionToolbar
 from cms.utils.urlutils import admin_reverse
+from cms.utils import get_language_list  # needed to get the page's languages
 from django.utils import translation
 from django.utils.translation import ugettext_lazy as _
 
-
-from workflows.models import Action, Workflow
-from .models import WorkflowExtension
-from cms.utils import get_language_list  # needed to get the page's languages
+from .models import Action, Workflow, WorkflowExtension
 
 
 def get_placeholder_toolbar():
@@ -30,8 +28,6 @@ def get_page_toolbar():
 
 class WorkflowExtensionToolbar(ExtensionToolbar):
     # As described in the docs
-
-    # defines the model for the current toolbar
     model = WorkflowExtension
 
     def populate(self):
@@ -48,7 +44,7 @@ class WorkflowExtensionToolbar(ExtensionToolbar):
             # retrieves the instances of the current title extension (if any) and the toolbar item URL
             urls = self.get_title_extension_admin()
 
-            # we now also need to get the titleset (i.e. different language titles) for this page
+            # we now also need to get the title set (i.e. different language titles) for this page
             page = self._get_page()
             titles = page.title_set.filter(language__in=get_language_list(page.site_id))
 
@@ -131,18 +127,18 @@ class WorkflowPageToolbar(get_page_toolbar()):
             menu.buttons.append(self._button(action_type))
 
     def add_action_admin_button(self, menu):
-            if self.current_request:
-                opts = Action._meta
-                button = SideframeButton(
-                    name=_('Show current request in admin'),
-                    url=admin_reverse(
-                        '{app_label}_{model_name}_change'.format(
-                            app_label=opts.app_label,
-                            model_name=opts.model_name
-                        ),
-                        args=[self.current_request.pk])
-                )
-                menu.buttons.append(button)
+        if self.current_request:
+            opts = Action._meta
+            button = SideframeButton(
+                name=_('Show current request in admin'),
+                url=admin_reverse(
+                    '{app_label}_{model_name}_change'.format(
+                        app_label=opts.app_label,
+                        model_name=opts.model_name
+                    ),
+                    args=[self.current_request.pk])
+            )
+            menu.buttons.append(button)
 
     def post_template_populate(self):
         self.init_placeholders()
@@ -168,16 +164,6 @@ class WorkflowPageToolbar(get_page_toolbar()):
         self.add_action_admin_button(workflow_dropdown)
         if workflow_dropdown.buttons:
             self.toolbar.add_item(workflow_dropdown)
-
-    # def get_publish_button(self, classes=None):
-    #     button = super(ExtendedPageToolbar, self).get_publish_button(['cms-btn-publish'])
-    #     publish_dropdown = Dropdown(side=self.toolbar.RIGHT)
-    #     publish_dropdown.add_primary_button(
-    #         DropdownToggleButton(name=_('Moderation'))
-    #     )
-    #     publish_dropdown.buttons.extend(button.buttons)
-    #     publish_dropdown.buttons.append(self.get_cancel_moderation_button())
-    #     return publish_dropdown
 
 
 class EditorToolbar(CMSToolbar):
