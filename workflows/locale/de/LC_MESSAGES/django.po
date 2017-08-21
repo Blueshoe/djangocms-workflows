@@ -162,7 +162,7 @@ msgid "request"
 msgstr "beantragen"
 
 msgid "approve"
-msgstr "freigeben"
+msgstr "freigegeben"
 
 msgid "reject"
 msgstr "ablehnen"
