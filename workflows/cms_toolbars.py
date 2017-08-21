@@ -189,6 +189,7 @@ class EditorToolbar(CMSToolbar):
                 action_dropdown.buttons.append(button)
             self.toolbar.add_item(action_dropdown)
 
+
 toolbar_pool.register(EditorToolbar)
 toolbar_pool.register(WorkflowExtensionToolbar)
 toolbar_pool.toolbars['cms.cms_toolbars.PlaceholderToolbar'] = WorkflowPlaceholderToolbar
