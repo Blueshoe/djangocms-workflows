@@ -21,7 +21,7 @@ NO_ACTIVE_REQUEST = _('There is no active request for this page and language.')
 USER_NOT_ALLOWED = _('You are not allowed to approve or reject this request.')
 
 # this closes the admin sideframe overlay and redirects to 'url' (in context)
-CLOSE_FRAME = 'cms/wizards/done.html'
+CLOSE_FRAME = 'workflows/admin/action_confirm.html'
 
 
 class ActionView(FormView):
