@@ -29,23 +29,13 @@ SUBJECTS = {
 
 def send_action_mails(action, editor=None):
     """
+    Returns `True` if any email has been sent.
 
     :param action: Action triggering mails
     :type action: Action
     :type editor: django.contrib.auth.models.AbstractUser
-    :return: # TODO
-    :rtype: # TODO
+    :rtype: bool
     """
-    # TODO
-    # open:
-    #   - request mail to first editor
-    # approve:
-    #   - approve mail to author
-    #   - request mail to next editor
-    # reject:
-    #   - reject mail to author
-    # cancel:
-    #   - cancel mail to author
     sent = False
 
     if action.action_type not in SUBJECTS:
@@ -75,8 +65,6 @@ def _context(action):
     author = action.get_author()
     editor = action.user
     context = {
-        # 'page': title.page,
-        # 'language': title.language,
         'url': get_absolute_url(action.title),
         'author_name': get_name(author, default=_('author')),
         'editor_name': get_name(editor, default=_('editor')),
@@ -112,7 +100,7 @@ def get_absolute_url(title):
 def get_name(user, default=None):
     try:
         name = user.get_full_name()
-        assert name.split() != ''
+        assert name.strip() != ''
         return name
     except (AttributeError, AssertionError):
         try:
