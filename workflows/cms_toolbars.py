@@ -172,7 +172,7 @@ class EditorToolbar(CMSToolbar):
     def populate(self):
         action_dropdown = Dropdown(side=self.toolbar.RIGHT,)
         action_dropdown.add_primary_button(
-            DropdownToggleButton(name=_('Action required!'))
+            DropdownToggleButton(name=_('Pending your approval'))
         )
         actions = Action.requiring_action(self.request.user)
         if actions:
