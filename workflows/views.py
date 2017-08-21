@@ -107,7 +107,7 @@ class ActionView(FormView):
         """
         if not self.action_request:
             return None
-        return self.action_request.get_next_stage(self.user)
+        return self.action_request.last_action().get_next_stage(self.user)
 
     def validate(self):
         """Validates that this view can legally be called with all the current parameters.
