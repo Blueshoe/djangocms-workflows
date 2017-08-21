@@ -20,7 +20,8 @@ ACTIVE_REQUEST = _('There already is an active request for this page and languag
 NO_ACTIVE_REQUEST = _('There is no active request for this page and language.')
 USER_NOT_ALLOWED = _('You are not allowed to approve or reject this request.')
 
-CLOSE_FRAME = 'admin/cms/page/close_frame.html'
+# this closes the admin sideframe overlay and redirects to 'url' (in context)
+CLOSE_FRAME = 'cms/wizards/done.html'
 
 
 class ActionView(FormView):
@@ -120,7 +121,7 @@ class ActionView(FormView):
 
         :rtype: str
         """
-        return self.title.path
+        return self.page.get_draft_url(language=self.language)
 
     def get_failed_url(self):
         """
@@ -149,7 +150,7 @@ class ActionView(FormView):
     def get_form_kwargs(self):
         """
         Kwargs to initialize form with. The form needs some extra information
-        as the actual Action creation is handled by the form's save method.
+        as the actual Action creation is handled by the form.
 
         :rtype: dict
         """
@@ -167,11 +168,7 @@ class ActionView(FormView):
         action = form.save()
         send_action_mails(action, editor=form.editor)
         messages.success(self.request, self.confirm_message)
-        # context variables needed for close_frame to work
-        return render(self.request, CLOSE_FRAME, {
-            'opts': Action._meta,
-            'root_path': reverse('admin:index'),
-        })
+        return render(self.request, CLOSE_FRAME, {'url': self.get_success_url()})
 
     def get_context_data(self, **kwargs):
         """
@@ -195,9 +192,9 @@ class ActionView(FormView):
 
 class RequestView(ActionView):
     action_type = Action.REQUEST
-    admin_title = _('Submit request for changes')
-    admin_save_label = _('Submit request for changes')
-    confirm_message = _('Changes successfully submitted for approval')
+    admin_title = _('Request approval for changes')
+    admin_save_label = _('Request approval for changes')
+    confirm_message = _('Successfully requested approval for changes')
 
     def validate(self):
         super(RequestView, self).validate()
