@@ -10,9 +10,9 @@ from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic.edit import FormView
 
-from workflows.email import send_action_mails
-from workflows.forms import ActionForm
-from workflows.models import Action, Workflow
+from .email import send_action_mails
+from .forms import ActionForm
+from .models import Action, Workflow
 
 
 NO_WORKFLOW = _('There is no workflow for this page and language.')
