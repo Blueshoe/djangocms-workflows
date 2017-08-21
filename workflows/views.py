@@ -24,6 +24,7 @@ CLOSE_FRAME = 'admin/cms/page/close_frame.html'
 
 
 class ActionView(FormView):
+
     template_name = 'workflows/admin/action_form.html'
     form_class = ActionForm
     action_type = None
@@ -34,6 +35,8 @@ class ActionView(FormView):
     @cached_property
     def language(self):
         """
+        Returns current language.
+
         :rtype: str
         """
         return self.args[1]
@@ -41,6 +44,8 @@ class ActionView(FormView):
     @cached_property
     def page(self):
         """
+        Returns current page which must be draft.
+
         :rtype: Page
         """
         pk = self.args[0]
@@ -55,6 +60,8 @@ class ActionView(FormView):
     @cached_property
     def title(self):
         """
+        Returns title instance of current page/language.
+
         :rtype: Title
         """
         try:
@@ -65,6 +72,8 @@ class ActionView(FormView):
     @cached_property
     def workflow(self):
         """
+        Returns the appropriate workflow for the current title.
+
         :rtype: workflows.models.Workflow
         """
         return Workflow.get_workflow(self.title)
@@ -72,6 +81,8 @@ class ActionView(FormView):
     @cached_property
     def user(self):
         """
+        Returns the user calling the view.
+
         :rtype: django.contrib.auth.models.User
         """
         return self.request.user
@@ -79,6 +90,8 @@ class ActionView(FormView):
     @cached_property
     def action_request(self):
         """
+        Returns the initial request action of the current title's current action chain.
+
         :rtype: Action
         """
         return Action.get_current_request(self.title)
@@ -86,6 +99,9 @@ class ActionView(FormView):
     @cached_property
     def stage(self):
         """
+        Returns the workflow stage that will be associated with the action created by this view.
+        That can be None in the case of the initial request which is never associated with a stage.
+
         :rtype: workflows.models.WorkflowStage
         """
         if not self.action_request:
@@ -93,16 +109,33 @@ class ActionView(FormView):
         return self.action_request.get_next_stage(self.user)
 
     def validate(self):
+        """Validates that this view can legally be called with all the current parameters.
+        """
         if self.workflow is None:
             raise InvalidAction(NO_WORKFLOW)
 
     def get_success_url(self):
+        """
+        Url to redirect to after successful post.
+
+        :rtype: str
+        """
         return self.title.path
 
     def get_failed_url(self):
+        """
+        Url to redirect to after failed validation.
+
+        :rtype: str
+        """
         return self.request.META.get('HTTP_REFERER', self.get_success_url())
 
     def get_form_url(self):
+        """
+        Url to submit form to.
+
+        :rtype: str
+        """
         return self.request.path
 
     def dispatch(self, request, *args, **kwargs):
@@ -114,6 +147,12 @@ class ActionView(FormView):
         return super(ActionView, self).dispatch(request, *args, **kwargs)
 
     def get_form_kwargs(self):
+        """
+        Kwargs to initialize form with. The form needs some extra information
+        as the actual Action creation is handled by the form's save method.
+
+        :rtype: dict
+        """
         kwargs = super(ActionView, self).get_form_kwargs()
         kwargs.update({
             'title': self.title,
@@ -135,6 +174,9 @@ class ActionView(FormView):
         })
 
     def get_context_data(self, **kwargs):
+        """
+        :rtype: dict
+        """
         ctx = super(ActionView, self).get_context_data(**kwargs)
         form = ctx.get('form')
         # Admin context
