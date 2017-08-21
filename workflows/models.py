@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import logging
+
 from cms.extensions.extension_pool import extension_pool
 from cms.extensions.models import TitleExtension
 from cms.models import Title
@@ -11,7 +13,7 @@ from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 from treebeard.mp_tree import MP_Node
 
-from .logging import logger
+logger = logging.getLogger('django.cms-workflows')
 
 
 class Workflow(models.Model):
