@@ -186,7 +186,7 @@ class EditorToolbar(CMSToolbar):
         action_dropdown.add_primary_button(
             DropdownToggleButton(name=_('Action required!'))
         )
-        actions = Action.titles_requiring_action(self.request.user)
+        actions = Action.requiring_action(self.request.user)
         if actions:
             opts = Action._meta
             view = '{app_label}_{model_name}_change'.format(

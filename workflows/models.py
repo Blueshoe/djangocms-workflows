@@ -14,6 +14,13 @@ from .logging import logger
 
 
 class Workflow(models.Model):
+    """
+    Model representing a editorial workflow. A workflow is simply a sequence of ordered
+    mandatory or optional stages. Every `cms.Title` instance can be associated with a
+    concrete Workflow instance via the WorkflowExtension. At most one workflow can be
+    made the default workflow which is assumed for all titles without their own or
+    inherited workflow.
+    """
     name = models.CharField(
         _('Name'),
         max_length=63,
@@ -24,7 +31,7 @@ class Workflow(models.Model):
     default = models.BooleanField(
         _('Default workflow'),
         default=False,
-        help_text=_('Should this be the default workflow for all pages?')
+        help_text=_('Should this be the default workflow for all pages and languages?')
     )
 
     class Meta:
@@ -41,12 +48,15 @@ class Workflow(models.Model):
 
     @classmethod
     def default_workflow(cls):
+        """
+        :return: The default workflow if one exists, else `None`
+        """
         try:
             return cls.objects.get(default=True)
         except cls.DoesNotExist:
             return None
         except cls.MultipleObjectsReturned:
-            logger.warning('Multiple default workflows set. This should not happen!')
+            logger.error('Multiple default workflows set. This should not happen!')
             raise
 
     @classmethod
@@ -87,6 +97,11 @@ class Workflow(models.Model):
         return self.mandatory_stages.first()
 
     def possible_next_stages(self, stage=None):
+        """
+        Return a queryset of all possible stages that can be used for the next action. These
+        are all stages starting with the very next stage up to and including the next mandatory
+        stage.
+        """
         if stage:
             return stage.possible_next_stages
         fms = self.first_mandatory_stage
@@ -99,6 +114,10 @@ class Workflow(models.Model):
 
 
 class WorkflowStage(models.Model):
+    """
+    Represents a stage of a workflow. It is associated with a group. That means only a member of the
+    group can approve or reject the stage.
+    """
     workflow = models.ForeignKey(
         'workflows.Workflow',
         on_delete=models.CASCADE,
@@ -148,6 +167,9 @@ class WorkflowStage(models.Model):
 
 
 class WorkflowExtension(TitleExtension):
+    """
+    This extension holds the workflow association of a cms.Title instance.
+    """
     workflow = models.ForeignKey(
         'workflows.Workflow',
         on_delete=models.CASCADE,
@@ -172,17 +194,6 @@ class WorkflowExtension(TitleExtension):
             workflow=self.workflow
         )
 
-    def open(self, user):
-        """
-
-        :param user:
-                User submitting changes.
-        :rtype: Action
-        :return: Initial open-Action of a workflow
-        """
-        # TODO
-        return None
-
     @cached_property
     def language(self):
         return self.extended_object.language
@@ -193,7 +204,39 @@ extension_pool.register(WorkflowExtension)
 
 class Action(MP_Node):
     """
+    Actions are the instantiations of workflow stages. They model a concrete editorial process that
+    is modelled as a linked sequence (a 'unary' tree) using treebeard's MP_Node:
 
+    The initial submission request is always a root node of action_type REQUEST.
+    This is followed by n actions of type APPROVE each of which is associated with a stage of the
+    appropriate workflow.
+    The last action in such a chain is an action of either of REJECT, CANCEL, or PUBLISH.
+    CANCEL/PUBLISH actions are not associated with a stage, but REJECT is.
+
+    E.g.:
+
+    workflow: editor1 [-> editor2] -> test_user    (editor2 is optional)
+
+        action: stage/group
+    ==========:============
+    1. REQUEST: --
+    2. APPROVE: editor1
+    3. APPROVE: editor2
+    4. APPROVE: test_user
+    5. PUBLISH: --
+
+    1. REQUEST: --
+    2. APPROVE: editor1
+    3. APPROVE: test_user
+    4. PUBLISH: --
+
+    1. REQUEST: --
+    2. APPROVE: editor1
+    3.  REJECT: test_user
+
+    1. REQUEST: --
+    2. APPROVE: editor1
+    3.  CANCEL: --
     """
     REQUEST, APPROVE, REJECT, CANCEL, PUBLISH = 'request', 'approve', 'reject', 'cancel', 'publish'
     TYPES = (
@@ -204,9 +247,9 @@ class Action(MP_Node):
         (PUBLISH, _('publish')),
     )
 
-    OPEN, APPROVED, REJECTED, CANCELLED, PUBLISHED = 'open', 'approved', 'rejected', 'cancelled', 'published'
+    REQUESTED, APPROVED, REJECTED, CANCELLED, PUBLISHED = 'requested', 'approved', 'rejected', 'cancelled', 'published'
     STATUS = (
-        (OPEN, _('Requested')),
+        (REQUESTED, _('Requested')),
         (APPROVED, _('Approved')),
         (REJECTED, _('Rejected')),
         (CANCELLED, _('Cancelled')),
@@ -283,7 +326,7 @@ class Action(MP_Node):
             except Action.DoesNotExist:
                 pass
             else:
-                assert previous.is_closed(), 'Previous request must be closed before opening a new request'
+                assert previous.is_closed(), 'Close previous request #{pk} before new request'.format(pk=previous.pk)
         super(Action, self).save(**kwargs)
 
     def is_closed(self):
@@ -327,15 +370,19 @@ class Action(MP_Node):
 
     def last_action(self):
         """
+        Returns the latest action of this action's action chain.
+
         :rtype: Action
         """
         return Action.get_tree(parent=self).latest('depth')
 
     def is_publishable(self):
         """
+        Is this action's title publishable with regard to this action's action chain?
+
         :rtype: bool
         """
-        if self.is_closed():
+        if self.is_closed():  # rejected, cancelled, or already published?
             return False
         last_action = self.last_action()
         if last_action.action_type != self.APPROVE:
@@ -359,7 +406,7 @@ class Action(MP_Node):
         if self.is_publishable():
             return self.APPROVED
         else:
-            return self.OPEN
+            return self.REQUESTED
 
     @cached_property
     def status_display(self):
@@ -376,6 +423,8 @@ class Action(MP_Node):
     @classmethod
     def get_current_request(cls, title):
         """
+        Returns the most recent request (root action) for this title.
+
         :rtype: Action
         """
         workflow = Workflow.get_workflow(title)
@@ -390,18 +439,23 @@ class Action(MP_Node):
     @classmethod
     def get_current_action(cls, title):
         """
+        Returns the most recent action for this title.
+
         :type title: Title
         :param title:
         :rtype: Action
         """
         latest_request = cls.get_current_request(title)
         if latest_request:
-            return cls.get_tree(latest_request).latest('depth')
+            return cls.get_tree(parent=latest_request).latest('depth')
         return None
 
     @classmethod
     def is_editable(cls, title):
         """
+        Can this title be edited at the moment?
+        Only returns `True` if there is no open request at the moment.
+
         :rtype: bool
         """
         current_request = cls.get_current_request(title)
@@ -410,7 +464,14 @@ class Action(MP_Node):
         return current_request.is_closed()
 
     @classmethod
-    def titles_requiring_action(cls, user):
+    def requiring_action(cls, user):
+        """
+        Returns a list of all actions that currently require approve or reject activity
+        by this user.
+
+        :type user: django.contrib.auth.models.User
+        :rtype: list
+        """
         actions = []
         for title in Title.objects.filter(action__isnull=False).distinct():
             ca = cls.get_current_action(title)
