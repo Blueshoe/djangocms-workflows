@@ -6,16 +6,19 @@ from django.utils.translation import ugettext_lazy as _
 
 from .models import Action
 
+
 class ActionForm(forms.Form):
     message_ = forms.CharField(
         label=_('Message'),
         required=False,
+        help_text=_('You may provide some more information.'),
         widget=forms.Textarea
     )
 
     editor_ = forms.ModelChoiceField(
         label=_('Editor'),
         queryset=get_user_model().objects.none(),
+        help_text=_('Only notify a specific user?'),
         required=False
     )
 
@@ -34,6 +37,13 @@ class ActionForm(forms.Form):
         self.adjust_editor()
 
     @property
+    def message(self):
+        """
+        :rtype: str
+        """
+        return self.cleaned_data.get('message_', '')
+
+    @property
     def editor(self):
         """
         :rtype: django.contrib.auth.models.User
@@ -47,13 +57,6 @@ class ActionForm(forms.Form):
         if self.editor:
             return get_user_model().objects.filter(pk=self.editor.pk)
         return self.next_stage.group.user_set.all()
-
-    @property
-    def message(self):
-        """
-        :rtype: str
-        """
-        return self.cleaned_data.get('message_', '')
 
     def adjust_editor(self):
         if self.action_type in (Action.CANCEL, Action.REJECT) or self.next_stage is None:
