@@ -313,7 +313,6 @@ class Action(MP_Node):
     class Meta:
         verbose_name = _('Workflow action')
         verbose_name_plural = _('Workflow actions')
-        # unique_together = (('title', 'stage'),)
         ordering = ('depth', 'created')
 
     def __str__(self):
