@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 
 from adminsortable2.admin import SortableInlineAdminMixin
 from cms.admin.pageadmin import PageAdmin

@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 from cms.models import Page, Title
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.http import Http404
 from django.shortcuts import render, redirect
-# Create your views here.
-
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic.edit import FormView

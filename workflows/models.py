@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 
 from cms.extensions.extension_pool import extension_pool
 from cms.extensions.models import TitleExtension

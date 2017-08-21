@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 from cms.cms_toolbars import PlaceholderToolbar, PageToolbar
 from cms.toolbar.items import ModalButton, Dropdown, DropdownToggleButton, SideframeButton, BaseItem
 from cms.toolbar_base import CMSToolbar

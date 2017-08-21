@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-from cms.operations import PUBLISH_PAGE_TRANSLATION
-from django.dispatch import receiver
+from __future__ import unicode_literals
 
+from cms.operations import PUBLISH_PAGE_TRANSLATION
 from cms.signals import post_obj_operation
+from django.dispatch import receiver
 
 from ..models import Action
 
