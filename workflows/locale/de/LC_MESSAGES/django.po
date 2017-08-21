@@ -1,0 +1,284 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2017-08-21 16:22+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Stages"
+msgstr "Stufen"
+
+msgid "Current changes have not yet been approved."
+msgstr "Die aktuellen Änderungen wurden noch nicht freigegeben."
+
+msgid "Current changes must be submitted for approval."
+msgstr "Für die aktuellen Änderungen muss noch Freigabe beatragt werden."
+
+msgid "Actions"
+msgstr "Aktionen"
+
+msgid "Requires your action"
+msgstr "Benötigt Aktion Ihrerseits"
+
+msgid "View page"
+msgstr "Seite anzeigen"
+
+msgid "View page in browser"
+msgstr "Seite in Browser anzeigen"
+
+msgid "Django CMS Workflows"
+msgstr ""
+
+msgid "Workflow"
+msgstr ""
+
+#, python-brace-format
+msgid "for \"{title}\" ({lang})"
+msgstr "für \"{title}\" ({lang})"
+
+msgid "Request approval for changes"
+msgstr "Freigabe für Änderungen beantragen"
+
+msgid "Approve changes"
+msgstr "Änderungen freigeben"
+
+msgid "Reject changes"
+msgstr "Änderungen ablehnen"
+
+msgid "Cancel request"
+msgstr "Freigabeantrag abbrechen"
+
+msgid "Show current request in admin"
+msgstr "Aktuellen Antrag im Admin ansehen"
+
+msgid "Publish"
+msgstr "Veröffentlichen"
+
+msgid "Pending your approval"
+msgstr "Wartet auf Ihre Freigabe"
+
+#, python-brace-format
+msgid "{project}: Change review requested"
+msgstr "{project}: Änderungsfreigabe beantragt"
+
+#, python-brace-format
+msgid "{project}: Changes approved"
+msgstr "{project}: Änderungen freigegeben"
+
+#, python-brace-format
+msgid "{project}: Changes rejected"
+msgstr "{project}: Änderungen abgelehnt"
+
+#, python-brace-format
+msgid "{project}: Changes cancelled"
+msgstr "{project}: Änderungsantrag abgebrochen"
+
+msgid "author"
+msgstr "Author"
+
+msgid "editor"
+msgstr "Editor"
+
+msgid "Message"
+msgstr "Nachricht"
+
+msgid "You may provide some more information."
+msgstr "Sie können noch zusätzliche Information geben."
+
+msgid "Editor"
+msgstr "Editor"
+
+msgid "Only notify a specific user?"
+msgstr "Nur einen speziellen Nutzer benachrichtigen?"
+
+msgid "Any {}"
+msgstr "Irgendeine/n {}"
+
+msgid "Name"
+msgstr "Name"
+
+msgid "Please provide a descriptive name!"
+msgstr "Bitte geben Sie einen sprechenden Namen an!"
+
+msgid "Default workflow"
+msgstr "Standard-Workflow"
+
+msgid "Should this be the default workflow for all pages and languages?"
+msgstr "Soll dies der Standard-Workflow für alle Seiten und Sprachen sein?"
+
+msgid "Workflows"
+msgstr ""
+
+msgid "Group"
+msgstr "Gruppe"
+
+msgid "Only members of this group can approve this workflow stage."
+msgstr "Nur Mitglieder dieser Gruppe können diese Workflow-Stufe freigeben."
+
+msgid "Order"
+msgstr "Reihenfolge"
+
+msgid "Optional"
+msgstr ""
+
+msgid "Is this workflow stage optional?"
+msgstr "Ist diese Workflow-Stufe optional?"
+
+msgid "Workflow stage"
+msgstr "Workflow-Stufe"
+
+msgid "Workflow stages"
+msgstr "Workflow-Stufe"
+
+msgid "The workflow set here is language specific."
+msgstr "Der hier gesetzte Workflow ist sprachabhängig."
+
+msgid "Descendants"
+msgstr "Unterseiten"
+
+msgid "Should this workflow apply to descendant pages?"
+msgstr "Soll dieser workflow auch für Unterseiten gelten?"
+
+msgid "Workflow extension"
+msgstr ""
+
+msgid "Workflow extensions"
+msgstr ""
+
+msgid "request"
+msgstr "beantragen"
+
+msgid "approve"
+msgstr "freigeben"
+
+msgid "reject"
+msgstr "ablehnen"
+
+msgid "cancel"
+msgstr "abbrechen"
+
+msgid "publish"
+msgstr "veröffentlichen"
+
+msgid "Requested"
+msgstr "Beantragt"
+
+msgid "Approved"
+msgstr "Freigegeben"
+
+msgid "Rejected"
+msgstr "Abgelehnt"
+
+msgid "Cancelled"
+msgstr "Abgebrochen"
+
+msgid "Published"
+msgstr "Veröffentlicht"
+
+msgid "Title"
+msgstr ""
+
+msgid "Stage"
+msgstr "Stufe"
+
+msgid "Action type"
+msgstr "Aktionstyp"
+
+msgid "Created"
+msgstr "Angelegt"
+
+msgid "User"
+msgstr "Nutzer"
+
+msgid "Workflow action"
+msgstr "Workflow-Aktion"
+
+msgid "Workflow actions"
+msgstr "Workflow-Aktionen"
+
+msgid "Status"
+msgstr ""
+
+msgid "Step"
+msgstr "Schritt"
+
+msgid "Action"
+msgstr "Aktion"
+
+msgid "Date"
+msgstr "Datum"
+
+msgid "Please correct the error below."
+msgstr "Bitte korrigieren Sie den untenstehenden Fehler."
+
+msgid "Please correct the errors below."
+msgstr "Bitte korrigieren Sie die untenstehenden Fehler."
+
+#, python-format
+msgid "your submission on %(url)s has been approved by %(editor_name)s."
+msgstr "Ihre Änderungen auf %(url)s wurden von %(editor_name)s freigegeben."
+
+#, python-format
+msgid "your submission on %(url)s has been cancelled by %(editor_name)s."
+msgstr "Ihr Änderungsantrag auf %(url)s wurden von %(editor_name)s abgebrochen."
+
+#, python-format
+msgid "your submission on %(url)s has been rejected by %(editor_name)s."
+msgstr "Ihre Änderungen auf %(url)s wurden von %(editor_name)s abgelehnt."
+
+msgid "Message:"
+msgstr "Nachricht:"
+
+#, python-format
+msgid "Dear %(editor_name)s,"
+msgstr "Sehr geehrter %(editor_name)s,"
+
+#, python-format
+msgid "please review the changes %(author_name)s has submitted in %(url)s."
+msgstr "Bitte überprüfen Sie die Änderungen von %(author_name)s auf %(url)s."
+
+msgid "There is no workflow for this page and language."
+msgstr "Es gibt für diese Seite und Sprache keinen Workflow."
+
+msgid "There already is an active request for this page and language."
+msgstr "Für diese Seite und Sprache gibt es bereits einen aktiven Änderungsantrag."
+
+msgid "There is no active request for this page and language."
+msgstr "Es gibt keinen aktiven Änderungsantrag für diese Seite und Sprache."
+
+msgid "You are not allowed to approve or reject this request."
+msgstr "Sie sind nicht berechtigt, diesen Antrag freizugeben oder abzulehnen."
+
+msgid "Done"
+msgstr "Fertig"
+
+msgid "Successfully requested approval for changes"
+msgstr "Erfolgreich Änderungsfreigabe beantragt"
+
+msgid "Approve request"
+msgstr "Änderungen freigeben"
+
+msgid "Request successfully approved"
+msgstr "Erfolgreich Änderungen freigegeben"
+
+msgid "Reject request"
+msgstr "Änderungen ablehnen"
+
+msgid "Request successfully rejected"
+msgstr "Erfolgreich Änderungen abgelehnt"
+
+msgid "Request successfully cancelled"
+msgstr "Erfolgreich Änderungsantrag abgebrochen"
