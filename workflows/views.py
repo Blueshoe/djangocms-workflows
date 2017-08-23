@@ -1,14 +1,23 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from copy import copy
+from difflib import SequenceMatcher
+
 from cms.models import Page, Title
+from cms.plugin_rendering import ContentRenderer
+
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.http import Http404
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
+from django.utils.html import escape
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
+from django.views.generic import TemplateView
 from django.views.generic.edit import FormView
+
+from sekizai.context import SekizaiContext
 
 from .email import send_action_mails
 from .forms import ActionForm
@@ -232,11 +241,101 @@ class CancelView(ActionView):
     confirm_message = _('Request successfully cancelled')
 
 
+class DiffView(TemplateView):
+    template_name = 'workflows/admin/action_diff.html'
+    pk = None
+    language = None
+
+    def render_placeholder(self, placeholder, context):
+        return placeholder.render(context, None, editable=False, use_cache=False, lang=self.language)
+
+    def render_page_placeholders(self, page, request):
+        new_request = copy(request)
+        setattr(new_request, 'current_page', page)
+
+        content_renderer = ContentRenderer(new_request)
+
+        context = SekizaiContext()
+        context.update({
+            'lang': self.language,
+            'current_page': page,
+            'request': copy(request),
+            'cms_content_renderer': content_renderer,
+        })
+
+        return {
+            placeholder.slot: self.render_placeholder(placeholder, context) for placeholder in page.placeholders.all()
+        }
+
+    def get(self, request, *args, **kwargs):
+        self.pk = args[0]
+        self.language = args[1]
+
+        return super(DiffView, self).get(request, *args, **kwargs)
+
+    def process_diff(self, sequence_matcher):
+        output_a = []
+        output_b = []
+
+        def format_chunk(chunk: str, start_tag, end_tag):
+            # if chunk contains a newline, then end tag and start new after the new line to not break diff display
+            if '\n' in chunk:
+                chunk = chunk.replace('\n', '{}\n{}'.format(end_tag, start_tag))
+
+            return '{start}{chunk}{end}{spacer}'.format(
+                start=start_tag, chunk=chunk, end=end_tag, spacer=' ' if chunk.endswith(' ') else ''
+            )
+
+        for opcode, a0, a1, b0, b1 in sequence_matcher.get_opcodes():
+            chunk_a = escape(sequence_matcher.a[a0:a1])
+            chunk_b = escape(sequence_matcher.b[b0:b1])
+
+            if opcode == 'equal':
+                output_a.append(chunk_a)
+                output_b.append(chunk_b)
+            elif opcode == 'insert':
+                output_a.append(format_chunk(chunk_a, '', ''))
+                output_b.append(format_chunk(chunk_b, '<ins>', '</ins>'))
+            elif opcode == 'delete':
+                output_a.append(format_chunk(chunk_a, '', ''))
+                output_b.append(format_chunk(chunk_b, '<del>', '</del>'))
+            elif opcode == 'replace':
+                output_a.append(format_chunk(chunk_a, '<del>', '</del>'))
+                output_b.append(format_chunk(chunk_b, '<ins>', '</ins>'))
+
+        return ''.join(output_a).splitlines(), ''.join(output_b).splitlines()
+
+    def get_context_data(self, **kwargs):
+        context = super(DiffView, self).get_context_data(**kwargs)
+
+        page = get_object_or_404(Page, pk=self.pk)
+        public_page = self.render_page_placeholders(page.get_public_object(), self.request)
+        draft_page = self.render_page_placeholders(page.get_draft_object(), self.request)
+
+        diffs = []
+        for slot, public_rendered in public_page.items():
+            draft_rendered = draft_page.pop(slot, [])
+            public, draft = self.process_diff(SequenceMatcher(None, public_rendered, draft_rendered))
+            diffs.append((slot, draft, public))
+
+        for slot, draft_rendered in draft_page.items():
+            public, draft = self.process_diff(SequenceMatcher(None, '', draft_rendered))
+            diffs.append((slot, draft, public))
+
+        context.update({
+            'title': _('Show current changes'),
+            'diffs': diffs,
+        })
+
+        return context
+
+
 WORKFLOW_VIEWS = {
     Action.REQUEST: RequestView,
     Action.APPROVE: ApproveView,
     Action.REJECT: RejectView,
     Action.CANCEL: CancelView,
+    Action.DIFF: DiffView,
 }
 
 

@@ -241,13 +241,14 @@ class Action(MP_Node):
     2. APPROVE: editor1
     3.  CANCEL: --
     """
-    REQUEST, APPROVE, REJECT, CANCEL, PUBLISH = 'request', 'approve', 'reject', 'cancel', 'publish'
+    REQUEST, APPROVE, REJECT, CANCEL, PUBLISH, DIFF = 'request', 'approve', 'reject', 'cancel', 'publish', 'diff'
     TYPES = (
         (REQUEST, _('request')),
         (APPROVE, _('approve')),
         (REJECT, _('reject')),
         (CANCEL, _('cancel')),
         (PUBLISH, _('publish')),
+        (DIFF, _('diff')),
     )
 
     REQUESTED, APPROVED, REJECTED, CANCELLED, PUBLISHED = 'requested', 'approved', 'rejected', 'cancelled', 'published'

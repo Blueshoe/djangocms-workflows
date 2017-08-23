@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 
 from cms.cms_toolbars import PlaceholderToolbar, PageToolbar
-from cms.toolbar.items import ModalButton, Dropdown, DropdownToggleButton, SideframeButton, BaseItem
+from cms.toolbar.items import ModalButton, Dropdown, DropdownToggleButton, SideframeButton, BaseItem, ButtonList
 from cms.toolbar_base import CMSToolbar
 from cms.toolbar_pool import toolbar_pool
 from cms.extensions.toolbar import ExtensionToolbar
@@ -84,7 +84,9 @@ class WorkflowPageToolbar(get_page_toolbar()):
         Action.APPROVE: _('Approve changes'),
         Action.REJECT: _('Reject changes'),
         Action.CANCEL: _('Cancel request'),
+        Action.DIFF: _('Diff view'),
     }
+    current_request = None
 
     def init_from_request(self):
         super(WorkflowPageToolbar, self).init_from_request()
@@ -103,6 +105,12 @@ class WorkflowPageToolbar(get_page_toolbar()):
                 return False
         return super(WorkflowPageToolbar, self).has_publish_permission()
 
+    def has_compare_permission(self):
+        if not self.has_dirty_objects():
+            return False
+
+        return True
+
     def has_permission(self, action_type):
         if getattr(self, 'workflow', None) is None:
             return False
@@ -114,6 +122,8 @@ class WorkflowPageToolbar(get_page_toolbar()):
             return self.current_request is None or self.current_request.is_closed()
         if action_type in (Action.APPROVE, Action.REJECT):
             return self.current_action and self.current_action.get_next_stage(self.user)
+        if action_type == Action.DIFF:
+            return self.has_dirty_objects()
         raise ValueError('Unknown action_type: {}'.format(action_type))
 
     def _button(self, action_type):
@@ -146,12 +156,20 @@ class WorkflowPageToolbar(get_page_toolbar()):
         self.init_placeholders()
         self.add_draft_live()
         self.add_publish_menu()
+        self.add_compare_button()
 
     def add_publish_button(self, classes=('cms-btn-action', 'cms-btn-publish',)):
         # only do dirty lookups if publish permission is granted else button isn't added anyway
         if self.toolbar.edit_mode and self.has_publish_permission():
             button = self.get_publish_button(classes=classes)
             self.toolbar.add_item(button)
+
+    def add_compare_button(self):
+        # only do dirty lookups if compare permission is granted else button isn't added
+        if self.toolbar.edit_mode and self.has_compare_permission():
+            button_list = ButtonList(side=self.toolbar.RIGHT)
+            self.add_button(button_list, Action.DIFF)
+            self.toolbar.add_item(button_list)
 
     def add_publish_menu(self, classes=('cms-btn-action', 'cms-btn-publish', 'cms-btn-publish-active',)):
         workflow_dropdown = Dropdown(side=self.toolbar.RIGHT)

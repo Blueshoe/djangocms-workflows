@@ -1,0 +1,122 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% load cms_admin cms_static %}
+
+{% block extrahead %}
+    {# in case plugins require widgets, they need to have bundle here #}
+    <script src="{% static_with_version "cms/js/dist/bundle.admin.base.min.js" %}" type="text/javascript"></script>
+    <script type="text/javascript">
+        if (!window.jQuery) {
+            window.jQuery = CMS.$;
+            window.$ = window.jQuery;
+        }
+    </script>
+    {{ block.super }}
+    <style>
+        .actions-diff-view {
+            margin: 0 auto;
+            width: 100%;
+            border-radius: 4px;
+            padding-bottom: 16px;
+        }
+
+        .actions-diff-view .diff--header {
+            padding: 5px 10px;
+            border-bottom: 1px solid #d8d8d8;
+            background-color: #f7f7f7;
+            font-size: 15px;
+        }
+
+        .actions-diff-view .diff--side {
+            display: inline-block;
+            overflow-x: scroll;
+            overflow-y: hidden;
+            width: 50%;
+            margin-right: -4px;
+            margin-bottom: -8px;
+            vertical-align: top;
+        }
+
+        .actions-diff-view table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .actions-diff-view table > tbody > tr > td {
+            font-size: 20px;
+            line-height: 20px;
+            color: #888;
+        }
+
+        .actions-diff-view table > tbody > tr > td.line-number {
+            user-select: none;
+            border: solid #eee;
+            border-width: 0 1px 0 1px;
+            cursor: pointer;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            background-color: #fff;
+        }
+
+        .actions-diff-view table > tbody > tr > td > ins {
+            display: inline-block;
+            margin-top: -1px;
+            text-decoration: none;
+            background-color: #97f295;
+            border-radius: .2em;
+            text-align: left;
+            font-size: 20px;
+            line-height: 20px;
+        }
+
+        .actions-diff-view table > tbody > tr > td > del {
+            display: inline-block;
+            margin-top: -1px;
+            text-decoration: none;
+            background-color: #ffb6ba;
+            border-radius: .2em;
+            font-size: 20px;
+            line-height: 20px;
+        }
+
+    </style>
+{% endblock %}
+
+{% block content %}
+    {% for slot, draft, public in diffs %}
+        <div class="actions-diff-view">
+            <div class="diff--side">
+                <table>
+                    <thead>
+                        <tr><th colspan="2" class="diff--header">{% trans "Draft" %} : {{ slot }}</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for line in draft %}
+                            <tr>
+                                <td class="line-number">{{ forloop.counter }}</td>
+                                <td>{{ line|safe }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="diff--side">
+                <table>
+                    <thead>
+                        <tr><th colspan="2" class="diff--header">{% trans "Public" %} : {{ slot }}</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for line in public %}
+                            <tr>
+                                <td class="line-number">{{ forloop.counter }}</td>
+                                <td>{{ line|safe }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endfor %}
+{% endblock content %}
