@@ -15,7 +15,9 @@ cmsplugin-filer>=1.1
 Django<1.9
 pytz
 django-classy-tags>=0.7
+django-extensions>=1.9.0
 html5lib>=0.999999,<0.99999999
 Pillow>=3.0
 django-sekizai>=0.9
 six
+psycopg2>=2.7.3
