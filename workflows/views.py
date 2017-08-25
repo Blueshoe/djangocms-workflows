@@ -10,7 +10,7 @@ from cms.plugin_rendering import ContentRenderer
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.http import Http404
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.utils.html import escape
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
@@ -308,7 +308,7 @@ class DiffView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super(DiffView, self).get_context_data(**kwargs)
 
-        page = Page.objects.get(pk=self.pk)
+        page = get_object_or_404(Page, pk=self.pk)
         public_page = self.render_page_placeholders(page.get_public_object(), self.request)
         draft_page = self.render_page_placeholders(page.get_draft_object(), self.request)
 
