@@ -16,6 +16,7 @@ from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import TemplateView
 from django.views.generic.edit import FormView
+from lxml.html.diff import htmldiff
 
 from sekizai.context import SekizaiContext
 
@@ -273,38 +274,6 @@ class DiffView(TemplateView):
 
         return super(DiffView, self).get(request, *args, **kwargs)
 
-    def process_diff(self, sequence_matcher):
-        output_a = []
-        output_b = []
-
-        def format_chunk(chunk: str, start_tag, end_tag):
-            # if chunk contains a newline, then end tag and start new after the new line to not break diff display
-            if '\n' in chunk:
-                chunk = chunk.replace('\n', '{}\n{}'.format(end_tag, start_tag))
-
-            return '{start}{chunk}{end}{spacer}'.format(
-                start=start_tag, chunk=chunk, end=end_tag, spacer=' ' if chunk.endswith(' ') else ''
-            )
-
-        for opcode, a0, a1, b0, b1 in sequence_matcher.get_opcodes():
-            chunk_a = escape(sequence_matcher.a[a0:a1])
-            chunk_b = escape(sequence_matcher.b[b0:b1])
-
-            if opcode == 'equal':
-                output_a.append(chunk_a)
-                output_b.append(chunk_b)
-            elif opcode == 'insert':
-                output_a.append(format_chunk(chunk_a, '', ''))
-                output_b.append(format_chunk(chunk_b, '<ins>', '</ins>'))
-            elif opcode == 'delete':
-                output_a.append(format_chunk(chunk_a, '', ''))
-                output_b.append(format_chunk(chunk_b, '<del>', '</del>'))
-            elif opcode == 'replace':
-                output_a.append(format_chunk(chunk_a, '<del>', '</del>'))
-                output_b.append(format_chunk(chunk_b, '<ins>', '</ins>'))
-
-        return ''.join(output_a).splitlines(), ''.join(output_b).splitlines()
-
     def get_context_data(self, **kwargs):
         context = super(DiffView, self).get_context_data(**kwargs)
 
@@ -315,12 +284,9 @@ class DiffView(TemplateView):
         diffs = []
         for slot, public_rendered in public_page.items():
             draft_rendered = draft_page.pop(slot, [])
-            public, draft = self.process_diff(SequenceMatcher(None, public_rendered, draft_rendered))
-            diffs.append((slot, draft, public))
 
-        for slot, draft_rendered in draft_page.items():
-            public, draft = self.process_diff(SequenceMatcher(None, '', draft_rendered))
-            diffs.append((slot, draft, public))
+            diff = htmldiff(public_rendered, draft_rendered)
+            diffs.append(diff)
 
         context.update({
             'title': _('Show current changes'),
