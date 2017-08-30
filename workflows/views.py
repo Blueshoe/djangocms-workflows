@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 
 from copy import copy
-from difflib import SequenceMatcher
+from lxml import etree
 
 from cms.models import Page, Title
 from cms.plugin_rendering import ContentRenderer
@@ -11,12 +11,11 @@ from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.http import Http404
 from django.shortcuts import render, redirect, get_object_or_404
-from django.utils.html import escape
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import TemplateView
 from django.views.generic.edit import FormView
-from lxml.html.diff import htmldiff
+from lxml.html.diff import htmldiff, parse_html
 
 from sekizai.context import SekizaiContext
 
@@ -286,7 +285,17 @@ class DiffView(TemplateView):
             draft_rendered = draft_page.pop(slot, [])
 
             diff = htmldiff(public_rendered, draft_rendered)
-            diffs.append(diff)
+            tree = parse_html(diff, cleanup=False)
+
+            for item in tree.xpath("//ins | //del"):
+                if len(item):
+                    continue
+
+                content = item.text
+                if not (content and content.strip()):
+                    item.getparent().remove(item)
+
+            diffs.append(etree.tostring(tree, method='html'))
 
         context.update({
             'title': _('Show current changes'),
