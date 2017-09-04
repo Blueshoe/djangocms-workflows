@@ -21,102 +21,33 @@
             padding-bottom: 16px;
         }
 
-        .actions-diff-view .diff--header {
-            padding: 5px 10px;
-            border-bottom: 1px solid #d8d8d8;
-            background-color: #f7f7f7;
-            font-size: 15px;
-        }
-
-        .actions-diff-view .diff--side {
-            display: inline-block;
-            overflow-x: scroll;
-            overflow-y: hidden;
-            width: 50%;
-            margin-right: -4px;
-            margin-bottom: -8px;
-            vertical-align: top;
-        }
-
-        .actions-diff-view table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-        }
-
-        .actions-diff-view table > tbody > tr > td {
-            font-size: 20px;
-            line-height: 20px;
-            color: #888;
-        }
-
-        .actions-diff-view table > tbody > tr > td.line-number {
-            user-select: none;
-            border: solid #eee;
-            border-width: 0 1px 0 1px;
-            cursor: pointer;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            background-color: #fff;
-        }
-
-        .actions-diff-view table > tbody > tr > td > ins {
-            display: inline-block;
-            margin-top: -1px;
+        ins {
+            background-color: #ffffff;
+            border: 2px solid #97f295;
+            border-radius: 5px;
             text-decoration: none;
-            background-color: #97f295;
-            border-radius: .2em;
-            text-align: left;
-            font-size: 20px;
-            line-height: 20px;
+            display: inline-block;
+            padding: 2px;
         }
 
-        .actions-diff-view table > tbody > tr > td > del {
+        del {
+            background-color: #ffffff;
+            border: 2px solid #ffb6ba;
+            border-radius: 5px;
+            text-decoration: line-through;
             display: inline-block;
-            margin-top: -1px;
-            text-decoration: none;
-            background-color: #ffb6ba;
-            border-radius: .2em;
-            font-size: 20px;
-            line-height: 20px;
+            padding: 2px;
         }
 
     </style>
 {% endblock %}
 
 {% block content %}
-    {% for slot, draft, public in diffs %}
+    {% for diff in diffs %}
         <div class="actions-diff-view">
-            <div class="diff--side">
-                <table>
-                    <thead>
-                        <tr><th colspan="2" class="diff--header">{% trans "Draft" %} : {{ slot }}</th></tr>
-                    </thead>
-                    <tbody>
-                        {% for line in draft %}
-                            <tr>
-                                <td class="line-number">{{ forloop.counter }}</td>
-                                <td>{{ line|safe }}</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            <div class="diff--side">
-                <table>
-                    <thead>
-                        <tr><th colspan="2" class="diff--header">{% trans "Public" %} : {{ slot }}</th></tr>
-                    </thead>
-                    <tbody>
-                        {% for line in public %}
-                            <tr>
-                                <td class="line-number">{{ forloop.counter }}</td>
-                                <td>{{ line|safe }}</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+            {% autoescape off %}
+                {{ diff }}
+            {% endautoescape %}
         </div>
     {% endfor %}
 {% endblock content %}
