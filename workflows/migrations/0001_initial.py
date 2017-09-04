@@ -10,7 +10,8 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('auth', '0006_require_contenttypes_0002'),
-        ('cms', '0018_auto_20170825_1058'),
+        # ('cms', '0018_auto_20170825_1058'),
+        ('cms', '0016_auto_20160608_1535'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
