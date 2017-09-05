@@ -70,7 +70,7 @@ class WorkflowPlaceholderToolbar(get_placeholder_toolbar()):
         super(WorkflowPlaceholderToolbar, self).init_from_request()
         if self.page:
             self.editable = Action.is_editable(self.page.title_set.filter(language=self.current_lang).first())
-            self.toolbar.content_renderer._placeholders_are_editable = self.editable
+            self.toolbar.content_renderer._placeholders_are_editable &= self.editable
 
     def add_structure_mode(self):
         if self.editable:

@@ -458,9 +458,11 @@ class Action(MP_Node):
         """
         Can this title be edited at the moment?
         Only returns `True` if there is no open request at the moment.
-
+        :type title: Title
         :rtype: bool
         """
+        if not title.publisher_is_draft:
+            return False
         current_request = cls.get_current_request(title)
         if current_request is None:
             return True
