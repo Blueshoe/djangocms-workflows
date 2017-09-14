@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from cms.cms_toolbars import PlaceholderToolbar, PageToolbar
+from cms.cms_toolbars import PlaceholderToolbar, PageToolbar, PAGE_MENU_IDENTIFIER
 from cms.toolbar.items import ModalButton, Dropdown, DropdownToggleButton, SideframeButton, BaseItem, ButtonList
 from cms.toolbar_base import CMSToolbar
 from cms.toolbar_pool import toolbar_pool
@@ -77,7 +77,8 @@ class WorkflowPlaceholderToolbar(get_placeholder_toolbar()):
             return super(WorkflowPlaceholderToolbar, self).add_structure_mode()
 
 
-class WorkflowPageToolbar(get_page_toolbar()):
+# class WorkflowPageToolbar(get_page_toolbar()):
+class WorkflowPageToolbar(PageToolbar):
     WORKFLOW_URL_NAME = 'workflow_{}'
     BUTTON_NAMES = {
         Action.REQUEST: _('Request approval for changes'),
@@ -87,6 +88,14 @@ class WorkflowPageToolbar(get_page_toolbar()):
         Action.DIFF: _('Diff view'),
     }
     current_request = None
+
+    def add_page_menu(self):
+        if not self.editable or self.in_app:
+            self.toolbar.get_or_create_menu(
+                PAGE_MENU_IDENTIFIER, _('Page'), position=1, disabled=True
+            )
+        else:
+            super(WorkflowPageToolbar, self).add_page_menu()
 
     def init_from_request(self):
         super(WorkflowPageToolbar, self).init_from_request()
@@ -98,6 +107,7 @@ class WorkflowPageToolbar(get_page_toolbar()):
             self.user = self.request.user
             self.next_stage = self.current_action.get_next_stage(self.user) if self.current_action else None
             self.editable = Action.is_editable(self.title)
+            self.in_app = self.in_apphook() and not self.in_apphook_root()
 
     def has_publish_permission(self):
         if getattr(self, 'workflow', None):
@@ -172,6 +182,8 @@ class WorkflowPageToolbar(get_page_toolbar()):
             self.toolbar.add_item(button_list)
 
     def add_publish_menu(self, classes=('cms-btn-action', 'cms-btn-publish', 'cms-btn-publish-active',)):
+        if self.in_app:
+            return
         workflow_dropdown = Dropdown(side=self.toolbar.RIGHT)
         workflow_dropdown.add_primary_button(
             DropdownToggleButton(name=_('Publish'))
