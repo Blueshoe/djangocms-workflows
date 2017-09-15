@@ -153,7 +153,9 @@ INSTALLED_APPS = (
     'configuration',  # needed for templates
     'django_extensions',
     # 'djangocms_moderation',
-    'workflows.apps.WorkflowsConfig'
+    'workflows.apps.WorkflowsConfig',
+    # 'workflows',
+    'example.simple_cms_app'
 )
 
 LANGUAGES = (
