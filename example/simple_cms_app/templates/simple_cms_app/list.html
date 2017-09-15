@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% load cms_tags %}
+{% block content %}
+    <h1>List</h1>
+    {% for simple_model in simple_models %}
+        <ul>
+        <li>
+        <a href="{% url 'simple:detail' pk=simple_model.pk %}">{{ simple_model.name }}</a>
+        </li>
+        </ul>
+    {% endfor %}
+{% endblock %}

@@ -1,0 +1,6 @@
+{% extends 'base.html' %}
+{% load cms_tags %}
+{% block content %}
+    <h1>Detail for {{ simple_model.name }}</h1>
+    {% render_placeholder simple_model.content %}
+{% endblock %}
