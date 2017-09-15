@@ -108,6 +108,16 @@ class WorkflowPageToolbar(PageToolbar):
             self.next_stage = self.current_action.get_next_stage(self.user) if self.current_action else None
             self.editable = Action.is_editable(self.title)
             self.in_app = self.in_apphook() and not self.in_apphook_root()
+        else:
+            self.title = None
+            self.workflow = None
+            self.current_request = None
+            self.current_action = None
+            self.user = self.request.user
+            self.next_stage = None
+            self.editable = False
+            self.in_app = False
+
 
     def has_publish_permission(self):
         if getattr(self, 'workflow', None):
